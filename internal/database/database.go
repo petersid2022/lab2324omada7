@@ -2,12 +2,12 @@ package database
 
 import (
 	"context"
-    "strings"
-    "errors"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -17,7 +17,9 @@ import (
 type Service interface {
 	Health() map[string]string
 	GetMovies() []Movie
-    GetMovie(url string) (Movie, error)
+	GetMovie(url string) (Movie, error)
+	ShowReview(url string) ([]Review, error)
+	AddReview(url string, stars int, reviewText string)
 }
 
 type Movie struct {
@@ -26,6 +28,14 @@ type Movie struct {
 	ReleaseDate string  `json:"ReleaseDate"`
 	Genre       string  `json:"Genre"`
 	AvgRating   float64 `json:"AvgRating"`
+}
+
+type Review struct {
+	Id         int    `json:"review_id"`
+	Stars      int    `json:"RatingStars"`
+	Review     string `json:"ReviewText"`
+	DatePosted string `json:"DatePosted"`
+	MovieId    string `json:"movie_id"`
 }
 
 type service struct {
@@ -96,8 +106,8 @@ func (s *service) GetMovies() []Movie {
 }
 
 func (s *service) GetMovie(url string) (Movie, error) {
-    modifiedTitle := strings.ReplaceAll(url, "-", " ")
-    selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
+	modifiedTitle := strings.ReplaceAll(url, "-", " ")
+	selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
 
 	movieRow, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -114,7 +124,90 @@ func (s *service) GetMovie(url string) (Movie, error) {
 		return movie, nil
 	}
 
-    fmt.Println(Movie{})
+	fmt.Println(Movie{})
 
 	return Movie{}, errors.New("movie not found")
+}
+
+func (s *service) ShowReview(url string) ([]Review, error) {
+	modifiedTitle := strings.ReplaceAll(url, "-", " ")
+	selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
+
+	movieRow, err := s.db.Query(selectDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer movieRow.Close()
+
+	var movie Movie
+	if movieRow.Next() {
+		err := movieRow.Scan(&movie.Id, &movie.Title, &movie.ReleaseDate, &movie.Genre, &movie.AvgRating)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	reviewDataQuery := fmt.Sprintf("SELECT * FROM review WHERE movie_id=%d", movie.Id)
+
+	reviewRow, err := s.db.Query(reviewDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer reviewRow.Close()
+
+	var reviews []Review
+
+	var ErrNoReviews = errors.New("no reviews")
+
+	for reviewRow.Next() {
+		var review Review
+		err := reviewRow.Scan(&review.Id, &review.Review, &review.Stars, &review.DatePosted, &review.MovieId)
+		if err != nil {
+			log.Printf("Error scanning review row: %v", err)
+		}
+		reviews = append(reviews, review)
+	}
+
+	if len(reviews) == 0 {
+		return nil, ErrNoReviews
+	}
+
+	return reviews, nil
+}
+
+func (s *service) AddReview(url string, stars int, reviewText string) {
+	modifiedTitle := strings.ReplaceAll(url, "-", " ")
+	selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
+
+	movieRow, err := s.db.Query(selectDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer movieRow.Close()
+
+	var movie Movie
+	if movieRow.Next() {
+		err := movieRow.Scan(&movie.Id, &movie.Title, &movie.ReleaseDate, &movie.Genre, &movie.AvgRating)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	reviewDataQuery := fmt.Sprintf("SELECT * FROM review WHERE movie_id=%d", movie.Id)
+
+	reviewRow, err := s.db.Query(reviewDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer reviewRow.Close()
+
+	currentTime := time.Now()
+	dateToday := fmt.Sprintf("%d-%d-%d", currentTime.Year(), currentTime.Month(), currentTime.Day())
+
+	insertDataQuery := fmt.Sprintf("INSERT INTO review (ReviewText, RatingStars, DatePosted, movie_id) VALUES (%q, %d, '%s', %d);", reviewText, stars, dateToday, movie.Id)
+
+	_, err = s.db.Exec(insertDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
 }

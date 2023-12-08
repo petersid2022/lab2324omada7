@@ -1,17 +1,69 @@
 import React, { useState, useEffect } from 'react';
+import ReactStars from "react-rating-stars-component";
 import { useParams, useNavigate } from 'react-router-dom';
 import '../App.css';
 
 export default function Movie() {
     const [movie, setMovie] = useState({});
+    const [reviews, setReview] = useState([]);
     const { title } = useParams();
     const modifiedTitle = title.replace(/ /g, '-');
+    const [inputValue, setInputValue] = useState('');
+    const [rating, setRating] = useState(0);
+
+    const handleTextChange = (e) => {
+        setInputValue(e.target.value);
+    };
+
+    const ratingChanged = (newRating) => {
+        setRating(newRating);
+    };
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+
+        fetch(`http://localhost:1313/api/movies/add-review/${modifiedTitle}/${rating}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reviewText: inputValue,
+            }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log('Review and rating submitted successfully:', data);
+                setInputValue('');
+                setRating(0);
+            })
+            .catch((error) => {
+                console.error('Error submitting review and rating:', error);
+            });
+    };
+
+    const addedToLiked = (e) => {
+        const out = e.target.checked ? 1 : 0;
+        console.log(out);
+    };
+
+    const addedToWatchlist = (e) => {
+        const out = e.target.checked ? 1 : 0;
+        console.log(out);
+    };
 
     useEffect(() => {
         fetch(`http://localhost:1313/api/movies/${modifiedTitle}`)
             .then(response => response.json())
             .then(data => setMovie(data))
-            .catch(error => console.error('Error fetching items:', error));
+            .catch(error => console.error('Error fetching movie items:', error));
+    }, [modifiedTitle]);
+
+    useEffect(() => {
+        fetch(`http://localhost:1313/api/movies/reviews/${modifiedTitle}`)
+            .then(response => response.json())
+            .then(data => setReview(data))
+            .catch(error => console.error('Error fetching review items:', error));
     }, [modifiedTitle]);
 
     const navigate = useNavigate();
@@ -19,7 +71,6 @@ export default function Movie() {
     const goBack = () => {
         navigate(-1);
     };
-
 
     return (
         <div>
@@ -45,7 +96,49 @@ export default function Movie() {
                     <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
                     <br />
                     <span> Add to watchlist? </span>
-                    <input className="mx-2" type="checkbox" />
+                    <input onChange={addedToWatchlist} className="mx-2" type="checkbox" />
+                    <br />
+                    <span> Add to liked? </span>
+                    <input onChange={addedToLiked} className="mx-2" type="checkbox" />
+                    <form onSubmit={handleSubmit}>
+                        <div>
+                            <label>
+                                Enter Text:
+                                <input
+                                    type="text"
+                                    value={inputValue}
+                                    onChange={handleTextChange}
+                                />
+                            </label>
+                        </div>
+                        <div>
+                            <ReactStars
+                                count={5}
+                                onChange={ratingChanged}
+                                size={24}
+                                activeColor="#ffd700"
+                                value={rating}
+                            />
+                        </div>
+                        <button type="submit">Submit</button>
+                    </form>
+                    <br />
+                    <div className="font-bold text-2xl">
+                        <h1 className="text-gray-800 transition-colors duration-300">
+                            Reviews
+                        </h1>
+                    </div>
+                    <div>
+                        {reviews.map((review, index) => (
+                            <div key={index}>
+                                <p>Review ID: {review.review_id}</p>
+                                <p>Rating Stars: {review.RatingStars}</p>
+                                <p>Review Text: {review.ReviewText}</p>
+                                <p>Date Posted: {review.DatePosted}</p>
+                                <br />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
