@@ -83,64 +83,64 @@ export default function Movie() {
             </div>
 
             <div className="m-4 bg-gray-100 text-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700">
-                <div className="px-6 pt-3">
-                    <div className="font-bold text-2xl">
-                        <h1 className="text-gray-800 transition-colors duration-300">
-                            {movie.Title}
-                        </h1>
-                    </div>
-                </div>
-                <div className="px-6 pb-3">
-                    <p className="text-gray-900 text-2xl">Average Rating: {movie.AvgRating}/5</p>
-                    <p className="text-gray-900 text-2xl">Πρώτη προβολή: {movie.ReleaseDate}</p>
-                    <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
-                    <br />
-                    <span> Add to watchlist? </span>
-                    <input onChange={addedToWatchlist} className="mx-2" type="checkbox" />
-                    <br />
-                    <span> Add to liked? </span>
-                    <input onChange={addedToLiked} className="mx-2" type="checkbox" />
-                    <form onSubmit={handleSubmit}>
-                        <div>
-                            <label>
-                                Enter Text:
-                                <input
-                                    type="text"
-                                    value={inputValue}
-                                    onChange={handleTextChange}
-                                />
-                            </label>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="px-6 py-3">
+                        <div className="font-bold text-2xl">
+                            <h1 className="text-gray-800 transition-colors duration-300">
+                                {movie.Title}
+                            </h1>
                         </div>
-                        <div>
-                            <ReactStars
-                                count={5}
-                                onChange={ratingChanged}
-                                size={24}
-                                activeColor="#ffd700"
-                                value={rating}
-                            />
-                        </div>
-                        <button type="submit">Submit</button>
-                    </form>
-                    <br />
-                    <div className="font-bold text-2xl">
-                        <h1 className="text-gray-800 transition-colors duration-300">
-                            Reviews
-                        </h1>
-                    </div>
-                    <div>
-                        {reviews.map((review, index) => (
-                            <div key={index}>
-                                <p>Review ID: {review.review_id}</p>
-                                <p>Rating Stars: {review.RatingStars}</p>
-                                <p>Review Text: {review.ReviewText}</p>
-                                <p>Date Posted: {review.DatePosted}</p>
-                                <br />
+                        <p className="text-gray-900 text-2xl">Average Rating: {movie.AvgRating}/5</p>
+                        <p className="text-gray-900 text-2xl">Πρώτη προβολή: {movie.ReleaseDate}</p>
+                        <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
+                        <br />
+                        <span> Add to watchlist? </span>
+                        <input onChange={addedToWatchlist} className="mx-2" type="checkbox" />
+                        <br />
+                        <span> Add to liked? </span>
+                        <input onChange={addedToLiked} className="mx-2" type="checkbox" />
+                        <form onSubmit={handleSubmit}>
+                            <div>
+                                <label>
+                                    Enter review:
+                                    <input
+                                        className="mx-2 border border-black"
+                                        type="text"
+                                        value={inputValue}
+                                        onChange={handleTextChange}
+                                    />
+                                </label>
                             </div>
-                        ))}
+                            <div>
+                                <ReactStars
+                                    count={5}
+                                    onChange={ratingChanged}
+                                    size={24}
+                                    activeColor="#ffd700"
+                                    value={rating}
+                                />
+                            </div>
+                            <button className="border border-black px-2 py-1 hover:bg-red-100" type="submit">Submit</button>
+                        </form>
+                    </div>
+                    <div className="px-6 pt-3">
+                        <div className="font-bold text-2xl">
+                            <h1 className="text-gray-800 transition-colors duration-300">
+                                Reviews
+                            </h1>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 border border-black p-4 mb-4">
+                            {reviews.map((review, index) => (
+                                <div key={index}>
+                                    <p>Rating Stars: {review.RatingStars}</p>
+                                    <p>Review Text: {review.ReviewText}</p>
+                                    <p>Date Posted: {review.DatePosted}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
