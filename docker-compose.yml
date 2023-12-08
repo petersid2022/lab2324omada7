@@ -1,0 +1,25 @@
+version: '3'
+services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    depends_on:
+      - server
+    volumes:
+      - ./client:/app  # Mount local code into the container
+    environment:
+      - CHOKIDAR_USEPOLLING=true  # For file system watching in certain environments
+
+  server:
+    image: cosmtrek/air
+    working_dir: /app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 1313:1313
+    volumes:
+      - ./:/app/
