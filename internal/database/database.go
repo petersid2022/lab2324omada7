@@ -213,59 +213,61 @@ func (s *service) ShowReview(url string) ([]Review, error) {
 	return reviews, nil
 }
 
-func (s *service) AddReview(url string, stars int, reviewText string, userName string) {
+func (s *service) AddReview(url string, stars int, reviewText string, username string) {
     modifiedTitle := strings.ReplaceAll(url, "-", " ")
 
-    getUserIDQuery := fmt.Sprintf("SELECT user_id FROM user WHERE Username=%q", userName)
+    selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
+    movieRow, err := s.db.Query(selectDataQuery)
+    if err != nil {
+        panic(err.Error())
+    }
+    defer movieRow.Close()
+
+    var movie Movie
+    if movieRow.Next() {
+        err := movieRow.Scan(&movie.Id, &movie.Title, &movie.ReleaseDate, &movie.Genre, &movie.AvgRating)
+        if err != nil {
+            panic(err.Error())
+        }
+    }
+
+    getUserIDQuery := fmt.Sprintf("SELECT user_id FROM user WHERE Username=%q", username)
     var userID int
-    err := s.db.QueryRow(getUserIDQuery).Scan(&userID)
+    err = s.db.QueryRow(getUserIDQuery).Scan(&userID)
     if err != nil {
         panic(err.Error())
     }
 
-    getExistingReviewQuery := fmt.Sprintf("SELECT review_id FROM wrote WHERE user_id = %d", userID)
+    existingReviewQuery := fmt.Sprintf("SELECT review_id FROM wrote WHERE user_id = %d AND movie_id = %d", userID, movie.Id)
     var existingReviewID int
-    err = s.db.QueryRow(getExistingReviewQuery).Scan(&existingReviewID)
+    err = s.db.QueryRow(existingReviewQuery).Scan(&existingReviewID)
 
-    var movie Movie
-    if err != nil {
-        selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
-        movieRow, err := s.db.Query(selectDataQuery)
+    currentTime := time.Now()
+    dateToday := fmt.Sprintf("%d-%d-%d", currentTime.Year(), currentTime.Month(), currentTime.Day())
+
+    if existingReviewID != 0 {
+        updateReviewQuery := "UPDATE review SET ReviewText = ?, RatingStars = ?, DatePosted = ? WHERE review_id = ?"
+        _, err = s.db.Exec(updateReviewQuery, reviewText, stars, dateToday, existingReviewID)
         if err != nil {
             panic(err.Error())
         }
-        defer movieRow.Close()
-
-        if movieRow.Next() {
-            err := movieRow.Scan(&movie.Id, &movie.Title, &movie.ReleaseDate, &movie.Genre, &movie.AvgRating)
-            if err != nil {
-                panic(err.Error())
-            }
-        }
-
-        currentTime := time.Now()
-        dateToday := currentTime.Format("2006-01-02")
-
+    } else {
         insertReviewQuery := fmt.Sprintf("INSERT INTO review (ReviewText, RatingStars, DatePosted, movie_id) VALUES (%q, %d, '%s', %d);", reviewText, stars, dateToday, movie.Id)
 
-        result, err := s.db.Exec(insertReviewQuery)
+        _, err = s.db.Exec(insertReviewQuery)
         if err != nil {
             panic(err.Error())
         }
 
-        reviewID, err := result.LastInsertId()
+        getLastReviewIDQuery := "SELECT LAST_INSERT_ID()"
+        var lastReviewID int
+        err = s.db.QueryRow(getLastReviewIDQuery).Scan(&lastReviewID)
         if err != nil {
             panic(err.Error())
         }
 
         insertWroteQuery := "INSERT INTO wrote (review_id, user_id) VALUES (?, ?)"
-        _, err = s.db.Exec(insertWroteQuery, reviewID, userID)
-        if err != nil {
-            panic(err.Error())
-        }
-    } else {
-        updateReviewQuery := "UPDATE review SET ReviewText = ?, RatingStars = ?, DatePosted = ? WHERE review_id = ?"
-        _, err = s.db.Exec(updateReviewQuery, reviewText, stars, time.Now().Format("2006-01-02"), existingReviewID)
+        _, err = s.db.Exec(insertWroteQuery, lastReviewID, userID)
         if err != nil {
             panic(err.Error())
         }

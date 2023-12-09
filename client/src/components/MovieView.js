@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactStars from "react-rating-stars-component";
+import ReviewCard from './ReviewCard';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../App.css';
 
@@ -79,17 +80,17 @@ export default function MovieView() {
     };
 
     return (
-        <div>
+        <div className="max-w-fit">
             <div className="m-4">
                 <button onClick={goBack} className="hover:no-underline">
-                    <div className="bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-xl">
+                    <div className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow text-xl">
                         <span>Go Back</span>
                     </div>
                 </button>
             </div>
 
-            <div className="m-4 bg-gray-100 text-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700">
-                <div className="grid grid-cols-2 gap-4">
+            <div className="flex justify-center w-screen">
+                <div className="m-4 bg-white text-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700">
                     <div className="px-6 py-3">
                         <div className="font-bold text-2xl">
                             <h1 className="text-gray-800 transition-colors duration-300">
@@ -102,24 +103,23 @@ export default function MovieView() {
                         <br />
                         {isAuthenticated && (
                             <div>
-                                <span> Add to watchlist? </span>
-                                <input onChange={addedToWatchlist} className="mx-2" type="checkbox" />
-                                <br />
-                                <span> Add to liked? </span>
-                                <input onChange={addedToLiked} className="mx-2" type="checkbox" />
+                                <div className="flex items-center">
+                                    <span> Add to watchlist? </span>
+                                    <input onChange={addedToWatchlist} className="mx-2" type="checkbox" />
+                                    <span className="ml-4"> Add to liked? </span>
+                                    <input onChange={addedToLiked} className="mx-2" type="checkbox" />
+                                </div>
                                 <form onSubmit={handleSubmit}>
-                                    <div>
+                                    <div className="flex items-center my-1">
                                         <label>
-                                            Enter review:
+                                            Watched it? Why not give it a short review?
                                             <input
-                                                className="mx-2 border border-black"
+                                                className="mx-2 border border-gray-700"
                                                 type="text"
                                                 value={inputValue}
                                                 onChange={handleTextChange}
                                             />
                                         </label>
-                                    </div>
-                                    <div>
                                         <ReactStars
                                             count={5}
                                             onChange={ratingChanged}
@@ -128,29 +128,29 @@ export default function MovieView() {
                                             value={rating}
                                         />
                                     </div>
-                                    <button className="border border-black px-2 py-1 hover:bg-red-100" type="submit">Submit</button>
+                                    <button className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow" type="submit">Submit</button>
                                 </form>
                             </div>
                         )}
+                        <h1 className="mt-4 text-center font-bold text-2xl text-gray-800 transition-colors duration-300">
+                            Reviews
+                        </h1>
+                        <h1 className="text-center font-light text-xl text-gray-800 transition-colors duration-300">
+                            see what other people had to say about this movie!
+                        </h1>
                     </div>
-                    <div className="px-6 pt-3">
-                        <div className="font-bold text-2xl">
-                            <h1 className="text-gray-800 transition-colors duration-300">
-                                Reviews
-                            </h1>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4 border border-black p-4 mb-4">
-                            {reviews.map((review, index) => (
-                                <div key={index}>
-                                    <p>Rating Stars: {review.RatingStars}</p>
-                                    <p>Review Text: {review.ReviewText}</p>
-                                    <p>Date Posted: {review.DatePosted}</p>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="w-full flex flex-wrap justify-around">
+                        {reviews.map((review, index) => (
+                            <ReviewCard
+                                key={index}
+                                text={review.ReviewText}
+                                stars={review.RatingStars}
+                                date={review.DatePosted}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
     );
 };
