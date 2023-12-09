@@ -11,6 +11,7 @@ export default function MovieView() {
     const [inputValue, setInputValue] = useState('');
     const [rating, setRating] = useState(0);
     const isAuthenticated = localStorage.getItem('loggedIn') === 'true';
+    const username = localStorage.getItem('username');
 
     const handleTextChange = (e) => {
         setInputValue(e.target.value);
@@ -25,11 +26,15 @@ export default function MovieView() {
 
         fetch(`http://localhost:1313/api/movies/add-review/${modifiedTitle}/${rating}`, {
             method: 'POST',
+            crossDomain: true,
             headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "Access-Control-Allow-Origin": "*",
             },
             body: JSON.stringify({
                 reviewText: inputValue,
+                userName: username,
             }),
         })
             .then((response) => response.json())

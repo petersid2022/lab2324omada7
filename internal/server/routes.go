@@ -22,7 +22,8 @@ type UserPayload struct {
 }
 
 type ReviewPayload struct {
-	ReviewText string `json:"reviewText"`
+	ReviewText   string `json:"reviewText"`
+	UserNametext string `json:"userName"`
 }
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -37,7 +38,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Post("/api/movies/add-review/{title}/{stars}", s.AddReviewHandler)
 	r.Post("/create-account", s.CreateAccountHandler)
 	r.Post("/login", s.LoginHandler)
-    r.Post("/watchlist/{movieID}/{userID}", s.ToggleWatchlistHandler)
+	r.Post("/watchlist/{movieID}/{userID}", s.ToggleWatchlistHandler)
 
 	return r
 }
@@ -91,12 +92,15 @@ func (s *Server) AddReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reviewText := payload.ReviewText
+	userNameText := payload.UserNametext
 
 	starsNum, err := strconv.Atoi(stars)
 	if err != nil {
 		log.Fatalf("failed converting ratingstars string to int")
 	}
-	s.db.AddReview(title, starsNum, reviewText)
+	s.db.AddReview(title, starsNum, reviewText, userNameText)
+	w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode("ok")
 }
 
 func (s *Server) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +135,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	username := payload.Username
 	password := payload.Password
-	out, err := s.db.AuthenticateUser(username, password)
+	user, token, err := s.db.AuthenticateUser(username, password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -140,14 +144,17 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "ok",
-		"data":   out,
+		"data": map[string]interface{}{
+			"user":  user,
+			"token": token,
+		},
 	})
 }
 
 func (s *Server) UserDataHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-    idNum, _ := strconv.Atoi(id)
-    fmt.Println(idNum)
+	idNum, _ := strconv.Atoi(id)
+	fmt.Println(idNum)
 	getUserdata, err := s.db.GetUserData(idNum)
 	if err != nil {
 		if errors.Is(err, errors.New("no user")) {
@@ -167,10 +174,10 @@ func (s *Server) UserDataHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ToggleWatchlistHandler(w http.ResponseWriter, r *http.Request) {
 	movieid := chi.URLParam(r, "movieID")
 	userid := chi.URLParam(r, "userID")
-    movieIDNum, _ := strconv.Atoi(movieid)
-    fmt.Println(movieIDNum)
-    userIDNum, _ := strconv.Atoi(userid)
-    fmt.Println(userIDNum)
+	movieIDNum, _ := strconv.Atoi(movieid)
+	fmt.Println(movieIDNum)
+	userIDNum, _ := strconv.Atoi(userid)
+	fmt.Println(userIDNum)
 	err := s.db.ToggleWatchlist(movieIDNum, userIDNum)
 	if err != nil {
 		if errors.Is(err, errors.New("no user")) {

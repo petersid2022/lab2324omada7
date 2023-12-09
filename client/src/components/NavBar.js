@@ -3,6 +3,7 @@ import "../App.css";
 
 export default function NavBar({ searchTerm, handleChange }) {
     const isAuthenticated = localStorage.getItem('loggedIn') === 'true';
+    const userName = localStorage.getItem('username');
 
     const logout = () => {
         window.localStorage.clear();
@@ -24,7 +25,10 @@ export default function NavBar({ searchTerm, handleChange }) {
                     onChange={handleChange}
                 />
                 {isAuthenticated ? (
+                    <div className="flex items-center">
+                    <h2 className="text-right bg-gradient-to-r from-purple-800 via-violet-900 to-purple-800 bg-clip-text text-xl font-extrabold text-transparent">Hey {userName},<br />welcome back!</h2>
                     <button onClick={logout} className="bg-red-500 hover:bg-red-700 text-white font-bold px-4 py-2 rounded text-2xl mx-5">Logout</button>
+                    </div>
                 ) : (
                     <button onClick={login} className="bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-2xl mx-5">Login</button>
                 )}

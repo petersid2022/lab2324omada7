@@ -4,20 +4,11 @@ import Movies from './components/Movies.js';
 import MovieView from './components/MovieView.js';
 import CreateAccount from './components/CreateAccount';
 import LoginPage from './components/LoginPage';
-//import UserDetails from './components/UserDetails';
 
 function App() {
-    //const isLoggedIn = window.localStorage.getItem("loggedIn");
     return (
         <Router>
             <Routes>
-                {/*
-                <Route
-                    exact
-                    path="/"
-                    element={isLoggedIn === "true" ? <UserDetails /> : <LoginPage />}
-                />
-                */}
                 <Route path='/' element={<Movies />} />
                 <Route path='/login' element={<LoginPage />} />
                 <Route path='/register' element={<CreateAccount />} />

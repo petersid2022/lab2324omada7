@@ -37,8 +37,11 @@ export default class LoginPage extends React.Component {
             .then((data) => {
                 console.log(data);
                 if (data.status === "ok") {
-                    window.localStorage.setItem("token", data.data);
+                    const { user, token } = data.data;
+                    window.localStorage.setItem("token", token);
                     window.localStorage.setItem("loggedIn", true);
+                    window.localStorage.setItem("username", user.Username);
+                    window.localStorage.setItem("email", user.Email);
                     window.location.href = "/";
                 }
 
