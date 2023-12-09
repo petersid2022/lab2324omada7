@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import withAuth from "./withAuth.js";
 import MovieCard from './MovieCard.js';
 import '../App.css';
 
-export default function Movies() {
+const Movies = () => {
     const [movies, setItems] = useState([]);
+    const [data, setData] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+
+    const logout = () => {
+        window.localStorage.clear();
+        window.location.href = '/login';
+    };
 
     const removeDiacritics = (str) => {
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -32,6 +39,26 @@ export default function Movies() {
             .then(data => setItems(data))
             .catch(error => console.error('Error fetching items:', error));
     }, []);
+
+    useEffect(() => {
+        fetch("http://localhost:1313/userdata", {
+            method: "POST",
+            crossDomain: true,
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+            body: JSON.stringify({
+                token: window.localStorage.getItem("token"),
+            }),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                setData(data);
+            });
+    }, []);
+
+    console.log(data);
 
     const moviesList =
         movies.length === 0 ? (
@@ -93,6 +120,10 @@ export default function Movies() {
                 onChange={handleChange}
             />
             <div className="flex">{moviesList}</div>
+            <div className="flex items-center px-4 lg:px-6 xl:px-8">
+                <button onClick={logout} className="bg-red-500 hover:bg-red-700 text-white font-bold px-4 xl:px-6 py-2 xl:py-3 rounded text-2xl">Logout</button>
+            </div>
         </div>
     );
-};
+}
+export default withAuth(Movies);

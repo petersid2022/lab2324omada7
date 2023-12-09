@@ -11,8 +11,12 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/joho/godotenv/autoload"
+	"golang.org/x/crypto/bcrypt"
 )
+
+var secretKey = []byte(fmt.Sprint(os.Getenv("KEY")))
 
 type Service interface {
 	Health() map[string]string
@@ -20,6 +24,15 @@ type Service interface {
 	GetMovie(url string) (Movie, error)
 	ShowReview(url string) ([]Review, error)
 	AddReview(url string, stars int, reviewText string)
+	AuthenticateUser(username string, password string) (string, error)
+	RegisterUser(username string, password string, email string) (string, error)
+}
+
+type User struct {
+	ID       int    `json:"user_id"`
+	Username string `json:"Username"`
+	Password string `json:"Password"`
+	Email    string `json:"Email"`
 }
 
 type Movie struct {
@@ -193,14 +206,6 @@ func (s *service) AddReview(url string, stars int, reviewText string) {
 		}
 	}
 
-	reviewDataQuery := fmt.Sprintf("SELECT * FROM review WHERE movie_id=%d", movie.Id)
-
-	reviewRow, err := s.db.Query(reviewDataQuery)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer reviewRow.Close()
-
 	currentTime := time.Now()
 	dateToday := fmt.Sprintf("%d-%d-%d", currentTime.Year(), currentTime.Month(), currentTime.Day())
 
@@ -210,4 +215,117 @@ func (s *service) AddReview(url string, stars int, reviewText string) {
 	if err != nil {
 		panic(err.Error())
 	}
+
+	reviewDataQuery := fmt.Sprintf("SELECT AVG(RatingStars) FROM review WHERE movie_id=%d", movie.Id)
+
+	avgRatingRow, err := s.db.Query(reviewDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer avgRatingRow.Close()
+
+	var avgRating float64
+	if avgRatingRow.Next() {
+		err := avgRatingRow.Scan(&avgRating)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	updateAvgRatingQuery := fmt.Sprintf("UPDATE movie SET AvgRating = %f WHERE movie_id = %d", avgRating, movie.Id)
+
+	_, err = s.db.Exec(updateAvgRatingQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+func hashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
+func (s *service) RegisterUser(username string, password string, email string) (string, error) {
+	hashedPassword, err := hashPassword(password)
+	if err != nil {
+		return "", err
+	}
+
+	insertUserQuery := fmt.Sprintf("INSERT INTO user (Username, Password, Email) VALUES (%q, %q, %q)", username, hashedPassword, email)
+	_, err = s.db.Exec(insertUserQuery)
+	if err != nil {
+		return "", err
+	}
+
+	getUserIdQuery := fmt.Sprintf("SELECT user_id FROM user WHERE Username=%q", username)
+	var userID int
+	err = s.db.QueryRow(getUserIdQuery).Scan(&userID)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := createToken(userID)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func createToken(userID int) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": userID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
+}
+
+func comparePasswords(hashedPassword string, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err == nil {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (s *service) AuthenticateUser(username string, password string) (string, error) {
+	selectUserQuery := fmt.Sprintf("SELECT * FROM user WHERE Username=%q", username)
+	userRow, err := s.db.Query(selectUserQuery)
+	if err != nil {
+		return "", err
+	}
+	defer userRow.Close()
+
+	var user User
+	if userRow.Next() {
+		err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		return "", errors.New("username not found")
+	}
+
+	if comparePasswords(user.Password, password) {
+        log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
+		token, err := createToken(user.ID)
+		if err != nil {
+			log.Println("Error creating token:", err)
+			return "", errors.New("Error creating token")
+		}
+		return token, nil
+	} else {
+		fmt.Printf("Hashed Password: %s, Provided Password: %s\n", user.Password, password)
+	}
+
+	return "", nil
 }

@@ -76,7 +76,7 @@ export default function Movie() {
         <div>
             <div className="m-4">
                 <button onClick={goBack} className="hover:no-underline">
-                    <div className="text-xl bg-gray-100 hover:bg-gray-300 text-gray-800 font-semibold px-1 rounded shadow">
+                    <div className="bg-stone-700 hover:bg-stone-800 text-white font-bold px-4 py-2 rounded text-xl">
                         <span>Go Back</span>
                     </div>
                 </button>
