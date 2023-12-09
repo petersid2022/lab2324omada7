@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import withAuth from "./withAuth.js";
 import MovieCard from './MovieCard.js';
+import NavBar from './NavBar.js';
 import '../App.css';
 
 const Movies = () => {
     const [movies, setItems] = useState([]);
-    const [data, setData] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
-
-    const logout = () => {
-        window.localStorage.clear();
-        window.location.href = '/login';
-    };
 
     const removeDiacritics = (str) => {
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -40,25 +34,23 @@ const Movies = () => {
             .catch(error => console.error('Error fetching items:', error));
     }, []);
 
-    useEffect(() => {
-        fetch("http://localhost:1313/userdata", {
-            method: "POST",
-            crossDomain: true,
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-            },
-            body: JSON.stringify({
-                token: window.localStorage.getItem("token"),
-            }),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                setData(data);
-            });
-    }, []);
-
-    console.log(data);
+    //useEffect(() => {
+    //    fetch("http://localhost:1313/userdata", {
+    //        method: "POST",
+    //        crossDomain: true,
+    //        headers: {
+    //            "Content-Type": "application/json",
+    //            Accept: "application/json",
+    //        },
+    //        body: JSON.stringify({
+    //            token: window.localStorage.getItem("token"),
+    //        }),
+    //    })
+    //        .then((res) => res.json())
+    //        .then((data) => {
+    //            setData(data);
+    //        });
+    //}, []);
 
     const moviesList =
         movies.length === 0 ? (
@@ -112,18 +104,14 @@ const Movies = () => {
 
     return (
         <div>
-            <input
-                type="text"
-                className="border mt-6 ml-4 m-2 text-2xl border-gray-300 p-2 rounded text-black"
-                placeholder="Search"
-                value={searchTerm}
-                onChange={handleChange}
-            />
-            <div className="flex">{moviesList}</div>
-            <div className="flex items-center px-4 lg:px-6 xl:px-8">
-                <button onClick={logout} className="bg-red-500 hover:bg-red-700 text-white font-bold px-4 xl:px-6 py-2 xl:py-3 rounded text-2xl">Logout</button>
+            <NavBar searchTerm={searchTerm} handleChange={handleChange} />
+            <div className='container py-24'>
+                <div className='row'>
+                    <div className="flex">{moviesList}</div>
+                </div>
             </div>
+
         </div>
     );
 }
-export default withAuth(Movies);
+export default Movies;

@@ -3,13 +3,14 @@ import ReactStars from "react-rating-stars-component";
 import { useParams, useNavigate } from 'react-router-dom';
 import '../App.css';
 
-export default function Movie() {
+export default function MovieView() {
     const [movie, setMovie] = useState({});
     const [reviews, setReview] = useState([]);
     const { title } = useParams();
     const modifiedTitle = title.replace(/ /g, '-');
     const [inputValue, setInputValue] = useState('');
     const [rating, setRating] = useState(0);
+    const isAuthenticated = localStorage.getItem('loggedIn') === 'true';
 
     const handleTextChange = (e) => {
         setInputValue(e.target.value);
@@ -76,7 +77,7 @@ export default function Movie() {
         <div>
             <div className="m-4">
                 <button onClick={goBack} className="hover:no-underline">
-                    <div className="bg-stone-700 hover:bg-stone-800 text-white font-bold px-4 py-2 rounded text-xl">
+                    <div className="bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded text-xl">
                         <span>Go Back</span>
                     </div>
                 </button>
@@ -94,34 +95,38 @@ export default function Movie() {
                         <p className="text-gray-900 text-2xl">Πρώτη προβολή: {movie.ReleaseDate}</p>
                         <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
                         <br />
-                        <span> Add to watchlist? </span>
-                        <input onChange={addedToWatchlist} className="mx-2" type="checkbox" />
-                        <br />
-                        <span> Add to liked? </span>
-                        <input onChange={addedToLiked} className="mx-2" type="checkbox" />
-                        <form onSubmit={handleSubmit}>
+                        {isAuthenticated && (
                             <div>
-                                <label>
-                                    Enter review:
-                                    <input
-                                        className="mx-2 border border-black"
-                                        type="text"
-                                        value={inputValue}
-                                        onChange={handleTextChange}
-                                    />
-                                </label>
+                                <span> Add to watchlist? </span>
+                                <input onChange={addedToWatchlist} className="mx-2" type="checkbox" />
+                                <br />
+                                <span> Add to liked? </span>
+                                <input onChange={addedToLiked} className="mx-2" type="checkbox" />
+                                <form onSubmit={handleSubmit}>
+                                    <div>
+                                        <label>
+                                            Enter review:
+                                            <input
+                                                className="mx-2 border border-black"
+                                                type="text"
+                                                value={inputValue}
+                                                onChange={handleTextChange}
+                                            />
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <ReactStars
+                                            count={5}
+                                            onChange={ratingChanged}
+                                            size={24}
+                                            activeColor="#ffd700"
+                                            value={rating}
+                                        />
+                                    </div>
+                                    <button className="border border-black px-2 py-1 hover:bg-red-100" type="submit">Submit</button>
+                                </form>
                             </div>
-                            <div>
-                                <ReactStars
-                                    count={5}
-                                    onChange={ratingChanged}
-                                    size={24}
-                                    activeColor="#ffd700"
-                                    value={rating}
-                                />
-                            </div>
-                            <button className="border border-black px-2 py-1 hover:bg-red-100" type="submit">Submit</button>
-                        </form>
+                        )}
                     </div>
                     <div className="px-6 pt-3">
                         <div className="font-bold text-2xl">

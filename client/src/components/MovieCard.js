@@ -9,7 +9,7 @@ const MovieCard = (props) => {
     const modifiedTitle = movieTitle.replace(/ /g, '-');
 
     return (
-        <div className="m-4 hover:bg-gray-200 bg-gray-100 text-gray-800 max-w-xs rounded-lg overflow-hidden shadow-xl border border-gray-700">
+        <div className="m-4 hover:bg-gray-200 bg-gray-100 text-gray-800 max-w-xs rounded-lg overflow-hidden shadow-xl">
             <Link
                 to={`/movies/${modifiedTitle}`}
                 className="text-gray-800 hover:text-indigo-500 transition-colors duration-300"

@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 var JWT_SECRET = []byte(fmt.Sprint(os.Getenv("KEY")))
@@ -34,10 +33,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Get("/api/movies", s.GetAllMoviesHandler)
 	r.Get("/api/movies/{title}", s.GetMovieHandler)
 	r.Get("/api/movies/reviews/{title}", s.GetReviewsHandler)
+	r.Get("/userdata/{id}", s.UserDataHandler)
 	r.Post("/api/movies/add-review/{title}/{stars}", s.AddReviewHandler)
 	r.Post("/create-account", s.CreateAccountHandler)
 	r.Post("/login", s.LoginHandler)
-	r.Post("/userdata", s.UserDataHandler)
+    r.Post("/watchlist/{movieID}/{userID}", s.ToggleWatchlistHandler)
 
 	return r
 }
@@ -145,52 +145,92 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UserDataHandler(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var requestData struct {
-		Token string `json:"token"`
-	}
-	err := decoder.Decode(&requestData)
+	id := chi.URLParam(r, "id")
+    idNum, _ := strconv.Atoi(id)
+    fmt.Println(idNum)
+	getUserdata, err := s.db.GetUserData(idNum)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
+		if errors.Is(err, errors.New("no user")) {
+			http.Error(w, "No user found", http.StatusNotFound)
+			return
+		} else {
+			log.Printf("Failed to get review. Err: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 	}
 
-	fmt.Println("Received Token:", requestData.Token)
-
-	token, err := jwt.Parse(requestData.Token, func(token *jwt.Token) (interface{}, error) {
-		return JWT_SECRET, nil
-	})
-
-	if err != nil {
-		fmt.Println("Error parsing token:", err)
-		http.Error(w, "Token verification failed", http.StatusUnauthorized)
-		return
-	}
-
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		var userEmail, userUsername string
-
-		if emailClaim, ok := claims["email"].(string); ok {
-			userEmail = emailClaim
-		}
-
-		if usernameClaim, ok := claims["username"].(string); ok {
-			userUsername = usernameClaim
-		}
-
-		userData := UserPayload{
-			Username: userUsername,
-			Email:    userEmail,
-			Password: "",
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status": "ok",
-			"data":   userData,
-		})
-	} else {
-		http.Error(w, "Invalid token", http.StatusUnauthorized)
-	}
-
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(getUserdata)
 }
+
+func (s *Server) ToggleWatchlistHandler(w http.ResponseWriter, r *http.Request) {
+	movieid := chi.URLParam(r, "movieID")
+	userid := chi.URLParam(r, "userID")
+    movieIDNum, _ := strconv.Atoi(movieid)
+    fmt.Println(movieIDNum)
+    userIDNum, _ := strconv.Atoi(userid)
+    fmt.Println(userIDNum)
+	err := s.db.ToggleWatchlist(movieIDNum, userIDNum)
+	if err != nil {
+		if errors.Is(err, errors.New("no user")) {
+			http.Error(w, "No user found", http.StatusNotFound)
+			return
+		} else {
+			log.Printf("Failed to get review. Err: %v", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+//func (s *Server) UserDataHandler(w http.ResponseWriter, r *http.Request) {
+//	decoder := json.NewDecoder(r.Body)
+//	var requestData struct {
+//		Token string `json:"token"`
+//	}
+//	err := decoder.Decode(&requestData)
+//	if err != nil {
+//		http.Error(w, "Invalid request body", http.StatusBadRequest)
+//		return
+//	}
+//
+//	fmt.Println("Received Token:", requestData.Token)
+//
+//	token, err := jwt.Parse(requestData.Token, func(token *jwt.Token) (interface{}, error) {
+//		return JWT_SECRET, nil
+//	})
+//
+//	if err != nil {
+//		fmt.Println("Error parsing token:", err)
+//		http.Error(w, "Token verification failed", http.StatusUnauthorized)
+//		return
+//	}
+//
+//	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+//		var userEmail, userUsername string
+//
+//		if emailClaim, ok := claims["email"].(string); ok {
+//			userEmail = emailClaim
+//		}
+//
+//		if usernameClaim, ok := claims["username"].(string); ok {
+//			userUsername = usernameClaim
+//		}
+//
+//		userData := UserPayload{
+//			Username: userUsername,
+//			Email:    userEmail,
+//			Password: "",
+//		}
+//
+//		w.Header().Set("Content-Type", "application/json")
+//		json.NewEncoder(w).Encode(map[string]interface{}{
+//			"status": "ok",
+//			"data":   userData,
+//		})
+//	} else {
+//		http.Error(w, "Invalid token", http.StatusUnauthorized)
+//	}
+//
+//}

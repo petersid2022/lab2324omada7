@@ -26,6 +26,8 @@ type Service interface {
 	AddReview(url string, stars int, reviewText string)
 	AuthenticateUser(username string, password string) (string, error)
 	RegisterUser(username string, password string, email string) (string, error)
+	GetUserData(id int) (User, error)
+    ToggleWatchlist(movieID, userID int) error
 }
 
 type User struct {
@@ -140,6 +142,29 @@ func (s *service) GetMovie(url string) (Movie, error) {
 	fmt.Println(Movie{})
 
 	return Movie{}, errors.New("movie not found")
+}
+
+func (s *service) GetUserData(id int) (User, error) {
+	selectDataQuery := fmt.Sprintf("SELECT * FROM user WHERE user_id=%d", id)
+
+	userRow, err := s.db.Query(selectDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer userRow.Close()
+
+	if userRow.Next() {
+		var user User
+		err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+		if err != nil {
+			return User{}, err
+		}
+		return user, nil
+	}
+
+	fmt.Println(User{})
+
+	return User{}, errors.New("user not found")
 }
 
 func (s *service) ShowReview(url string) ([]Review, error) {
@@ -316,7 +341,7 @@ func (s *service) AuthenticateUser(username string, password string) (string, er
 	}
 
 	if comparePasswords(user.Password, password) {
-        log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
+		log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
 		token, err := createToken(user.ID)
 		if err != nil {
 			log.Println("Error creating token:", err)
@@ -328,4 +353,30 @@ func (s *service) AuthenticateUser(username string, password string) (string, er
 	}
 
 	return "", nil
+}
+
+func (s *service) ToggleWatchlist(movieID, userID int) error {
+	query := "SELECT 1 FROM ADDS_TO_WATCHLIST WHERE movie_id = ? AND user_id = ? LIMIT 1"
+	row := s.db.QueryRow(query, movieID, userID)
+	var exists int
+	err := row.Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("failed to check if entry exists: %v", err)
+	}
+	currentTime := time.Now()
+	dateToday := fmt.Sprintf("%d-%d-%d", currentTime.Year(), currentTime.Month(), currentTime.Day())
+	if exists == 1 {
+		deleteQuery := "DELETE FROM ADDS_TO_WATCHLIST WHERE movie_id = ? AND user_id = ?"
+		_, err := s.db.Exec(deleteQuery, movieID, userID)
+		if err != nil {
+			return fmt.Errorf("failed to delete from watchlist: %v", err)
+		}
+	} else {
+		query := "INSERT INTO ADDS_TO_WATCHLIST (movie_id, user_id, DateAdded) VALUES (?, ?, ?)"
+		_, err := s.db.Exec(query, movieID, userID, dateToday)
+		if err != nil {
+			return fmt.Errorf("failed to insert into watchlist: %v", err)
+		}
+	}
+	return nil
 }
