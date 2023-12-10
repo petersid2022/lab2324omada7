@@ -10,7 +10,7 @@ export default function CreateAccount() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [accountCreated, setAccountCreated] = useState(false);
-    const [remainingSeconds, setRemainingSeconds] = useState(5);
+    const [remainingSeconds, setRemainingSeconds] = useState(3);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -80,8 +80,8 @@ export default function CreateAccount() {
                             </button>
 
                             {accountCreated && (
-                                <p className="animate-bounce text-xl font-medium text-center text-gray-400">
-                                    Account created successfully :) Redirecting in {remainingSeconds} seconds...
+                                <p className="text-xl font-medium text-center text-gray-400">
+                                    Account created successfully. Redirecting in {remainingSeconds} seconds...
                                 </p>
                             )}
                             <p className="text-xl font-light text-gray-500 dark:text-gray-400">
