@@ -104,8 +104,8 @@ export default function MovieView() {
                                         {movie.Title}
                                     </h1>
                                 </div>
-                                <p className="text-gray-900 text-2xl">Average Rating: {movie.AvgRating}/5</p>
-                                <p className="text-gray-900 text-2xl">Πρώτη προβολή: {movie.ReleaseDate}</p>
+                                <p className="text-gray-900 text-2xl">Μέση Βαθμολογία: {movie.AvgRating}/5</p>
+                                <p className="text-gray-900 text-2xl">Ημερομηνία πρώτης προβολής: {movie.ReleaseDate}</p>
                                 <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
                             </div>
                         </div>

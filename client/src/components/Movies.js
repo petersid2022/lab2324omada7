@@ -106,9 +106,7 @@ const Movies = () => {
         <div>
             <NavBar searchTerm={searchTerm} handleChange={handleChange} />
             <div className='container py-24'>
-                <div className='row'>
-                    <div className="flex">{moviesList}</div>
-                </div>
+                <div className="grid grid-flow-col auto-cols-max">{moviesList}</div>
             </div>
 
         </div>

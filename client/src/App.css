@@ -4,6 +4,6 @@
 
 @layer base {
     html {
-        @apply min-h-screen bg-gradient-to-tr from-violet-500 to-orange-300; 
+        @apply min-h-screen bg-gradient-to-r from-indigo-300 to-purple-400;
     }
 }
