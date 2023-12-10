@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,12 +23,48 @@ type Service interface {
 	Health() map[string]string
 	GetMovies() []Movie
 	GetMovie(url string) (Movie, error)
+	GetDirectors() []Director
+	GetDirector(id string) (Director, error)
+	GetActors() []Actor
+	GetActor(id string) (Actor, error)
 	ShowReview(url string) ([]Review, error)
 	AddReview(url string, stars int, reviewText string, userName string)
 	AuthenticateUser(username string, password string) (User, string, error)
 	RegisterUser(username string, password string, email string) (string, error)
 	GetUserData(id int) (User, error)
 	ToggleWatchlist(movieID, userID int) error
+	GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error)
+	GetMoviesByActorID(actorID int) ([]ActedMovie, error)
+}
+
+type ActedMovie struct {
+	Movie
+	ActorID   int    `db:"actor_id" json:"actor_id"`
+	ActorName string `json:"ActorName"`
+	ActorDob  string `json:"DateOfBirth"`
+	Nationality  string `json:"Nationality"`
+}
+
+type DirectedMovie struct {
+	Movie
+	DirectorID   int    `db:"director_id" json:"director_id"`
+	DirectorName string `json:"DirectorName"`
+	DirectorDob  string `json:"DateOfBirth"`
+	Nationality  string `json:"Nationality"`
+}
+
+type Actor struct {
+	ID          int    `db:"actor_id" json:"actor_id"`
+	Name        string `json:"ActorName"`
+	Dob         string `json:"DateOfBirth"`
+	Nationality string `json:"Nationality"`
+}
+
+type Director struct {
+	ID          int    `db:"director_id" json:"director_id"`
+	Name        string `json:"DirectorName"`
+	Dob         string `json:"DateOfBirth"`
+	Nationality string `json:"Nationality"`
 }
 
 type User struct {
@@ -142,6 +179,182 @@ func (s *service) GetMovie(url string) (Movie, error) {
 	fmt.Println(Movie{})
 
 	return Movie{}, errors.New("movie not found")
+}
+
+func (s *service) GetActors() []Actor {
+	selectDataQuery := "SELECT * FROM actor"
+
+	rows, err := s.db.Query(selectDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer rows.Close()
+
+	var actors []Actor
+
+	for rows.Next() {
+		var actor Actor 
+		err := rows.Scan(&actor.ID, &actor.Name, &actor.Dob, &actor.Nationality)
+		if err != nil {
+			panic(err.Error())
+		}
+		actors = append(actors, actor)
+	}
+
+	fmt.Println(actors)
+
+	return actors 
+}
+
+func (s *service) GetDirectors() []Director {
+	selectDataQuery := "SELECT * FROM director"
+
+	rows, err := s.db.Query(selectDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer rows.Close()
+
+	var directors []Director
+
+	for rows.Next() {
+		var director Director
+		err := rows.Scan(&director.ID, &director.Name, &director.Dob, &director.Nationality)
+		if err != nil {
+			panic(err.Error())
+		}
+		directors = append(directors, director)
+	}
+
+	fmt.Println(directors)
+
+	return directors
+}
+
+func (s *service) GetDirector(id string) (Director, error) {
+	idNum, _ := strconv.Atoi(id)
+	selectDataQuery := fmt.Sprintf("SELECT * FROM director WHERE director_id=%d", idNum)
+
+	directorRow, err := s.db.Query(selectDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer directorRow.Close()
+
+	if directorRow.Next() {
+		var director Director
+		err := directorRow.Scan(&director.ID, &director.Name, &director.Dob, &director.Nationality)
+		if err != nil {
+			return Director{}, err
+		}
+		return director, nil
+	}
+
+	fmt.Println(Director{})
+
+	return Director{}, errors.New("director not found")
+}
+
+func (s *service) GetActor(id string) (Actor, error) {
+	idNum, _ := strconv.Atoi(id)
+	selectDataQuery := fmt.Sprintf("SELECT * FROM actor WHERE actor_id=%d", idNum)
+
+	actorRow, err := s.db.Query(selectDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer actorRow.Close()
+
+	if actorRow.Next() {
+		var actor Actor 
+		err := actorRow.Scan(&actor.ID, &actor.Name, &actor.Dob, &actor.Nationality)
+		if err != nil {
+			return Actor{}, err
+		}
+		return actor, nil
+	}
+
+	fmt.Println(Actor{})
+
+	return Actor{}, errors.New("actor not found")
+}
+
+func (s *service) GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error) {
+	query := `
+		SELECT m.movie_id, m.Title, m.ReleaseDate, m.Genre, m.AvgRating, d.director_id, dir.DateOfBirth, dir.DirectorName, dir.Nationality
+		FROM MOVIE m
+		JOIN DIRECTED d ON m.movie_id = d.movie_id
+		JOIN DIRECTOR dir ON d.director_id = dir.director_id
+		WHERE d.director_id = ?`
+
+	rows, err := s.db.Query(query, directorID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var movies []DirectedMovie
+	for rows.Next() {
+		var movie DirectedMovie
+		err := rows.Scan(
+			&movie.Id,
+			&movie.Title,
+			&movie.ReleaseDate,
+			&movie.Genre,
+			&movie.AvgRating,
+			&movie.DirectorID,
+			&movie.DirectorDob,
+			&movie.DirectorName,
+			&movie.Nationality,
+		)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		movies = append(movies, movie)
+	}
+
+	return movies, nil
+}
+
+func (s *service) GetMoviesByActorID(actorID int) ([]ActedMovie, error) {
+	query := `
+		SELECT m.movie_id, m.Title, m.ReleaseDate, m.Genre, m.AvgRating, act.actor_id, act.DateOfBirth, act.ActorName, act.Nationality
+		FROM MOVIE m
+		JOIN ACTED a ON m.movie_id = a.movie_id
+		JOIN ACTOR act ON a.actor_id = act.actor_id
+		WHERE a.actor_id = ?`
+
+	rows, err := s.db.Query(query, actorID)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var movies []ActedMovie
+	for rows.Next() {
+		var movie ActedMovie
+		err := rows.Scan(
+			&movie.Id,
+			&movie.Title,
+			&movie.ReleaseDate,
+			&movie.Genre,
+			&movie.AvgRating,
+			&movie.ActorID,
+			&movie.ActorDob,
+			&movie.ActorName,
+			&movie.Nationality,
+		)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		movies = append(movies, movie)
+	}
+
+	return movies, nil
 }
 
 func (s *service) GetUserData(id int) (User, error) {

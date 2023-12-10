@@ -4,8 +4,10 @@ import Movies from './components/Movies.js';
 import MovieView from './components/MovieView.js';
 import CreateAccount from './components/CreateAccount';
 import LoginPage from './components/LoginPage';
-import Actors from './components/Actors';
 import Directors from './components/Directors';
+import DirectorView from './components/DirectorView';
+import Actors from './components/Actors';
+import ActorView from './components/ActorView';
 
 function App() {
     return (
@@ -18,6 +20,8 @@ function App() {
                 <Route path='/actors' element={<Actors />} />
                 <Route path='/directors' element={<Directors />} />
                 <Route path='/movies/:title' element={<MovieView />} />
+                <Route path='/directors/:id' element={<DirectorView />} />
+                <Route path='/actors/:id' element={<ActorView />} />
             </Routes>
         </Router>
     );

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import MovieCard from './MovieCard.js';
+import DirectorCard from './DirectorCard.js';
 import NavBar from './NavBar.js';
 import '../App.css';
 
-const Movies = () => {
-    const [movies, setItems] = useState([]);
+const Directors = () => {
+    const [directors, setItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
 
@@ -21,21 +21,21 @@ const Movies = () => {
             removeDiacritics(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
             'gi'
         );
-        const results = movies.filter((movie) =>
-            removeDiacritics(movie.Title).match(regex)
+        const results = directors.filter((director) =>
+            removeDiacritics(director.DirectorName).match(regex)
         );
         setSearchResults(results);
-    }, [searchTerm, movies]);
+    }, [searchTerm, directors]);
 
     useEffect(() => {
-        fetch('http://localhost:1313/api/movies')
+        fetch('http://localhost:1313/api/directors')
             .then(response => response.json())
             .then(data => setItems(data))
             .catch(error => console.error('Error fetching items:', error));
     }, []);
 
-    const moviesList =
-        movies.length === 0 ? (
+    const directorsList =
+        directors.length === 0 ? (
             <div className="text-center">
                 <div role="status">
                     <svg
@@ -58,7 +58,7 @@ const Movies = () => {
                 </div>
             </div>
         ) : searchResults.length > 0 ? (
-            searchResults.map((movie, k) => <MovieCard key={k} movie={movie} />)
+            searchResults.map((director, k) => <DirectorCard key={k} director={director} />)
         ) : (
             <div className="text-center">
                 <div role="status">
@@ -87,8 +87,8 @@ const Movies = () => {
     return (
         <div>
             <NavBar searchTerm={searchTerm} handleChange={handleChange} />
-            <div className="w-full py-24 grid grid-cols-4 gap-4">{moviesList}</div>
+            <div className="w-full py-24 flex justify-start">{directorsList}</div>
         </div>
     );
 }
-export default Movies;
+export default Directors;

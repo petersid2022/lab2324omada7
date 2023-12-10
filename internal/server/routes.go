@@ -31,10 +31,16 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Use(middleware.Logger)
 
 	r.Get("/health", s.healthHandler)
+	r.Get("/api/directors", s.GetAllDirectorsHandler)
+	r.Get("/api/directors/{name}", s.GetDirectorHandler)
+	r.Get("/api/actors", s.GetAllActorsHandler)
+	r.Get("/api/actors/{name}", s.GetActorHandler)
 	r.Get("/api/movies", s.GetAllMoviesHandler)
 	r.Get("/api/movies/{title}", s.GetMovieHandler)
 	r.Get("/api/movies/reviews/{title}", s.GetReviewsHandler)
 	r.Get("/userdata/{id}", s.UserDataHandler)
+    r.Get("/api/directors/{id}", s.DirectedHandler)
+    r.Get("/api/actors/{id}", s.ActedHandler)
 	r.Post("/api/movies/add-review/{title}/{stars}", s.AddReviewHandler)
 	r.Post("/create-account", s.CreateAccountHandler)
 	r.Post("/login", s.LoginHandler)
@@ -53,6 +59,16 @@ func (s *Server) GetAllMoviesHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s.db.GetMovies())
 }
 
+func (s *Server) GetAllDirectorsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.db.GetDirectors())
+}
+
+func (s *Server) GetAllActorsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(s.db.GetActors())
+}
+
 func (s *Server) GetMovieHandler(w http.ResponseWriter, r *http.Request) {
 	title := chi.URLParam(r, "title")
 	getMovie, err := s.db.GetMovie(title)
@@ -62,6 +78,28 @@ func (s *Server) GetMovieHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(getMovie)
+}
+
+func (s *Server) GetDirectorHandler(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	getDirector, err := s.db.GetDirector(name)
+	if err != nil {
+		log.Fatalf("Failed to get director. Err: %v", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(getDirector)
+}
+
+func (s *Server) GetActorHandler(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	getActor, err := s.db.GetActor(name)
+	if err != nil {
+		log.Fatalf("Failed to get actor. Err: %v", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(getActor)
 }
 
 func (s *Server) GetReviewsHandler(w http.ResponseWriter, r *http.Request) {
@@ -169,6 +207,32 @@ func (s *Server) UserDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(getUserdata)
+}
+
+func (s *Server) DirectedHandler(w http.ResponseWriter, r *http.Request) {
+	directorIDStr := chi.URLParam(r, "id")
+	directorID, _ := strconv.Atoi(directorIDStr)
+	movies, err := s.db.GetMoviesByDirectorID(directorID)
+	if err != nil {
+		http.Error(w, "Error fetching directors", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+    fmt.Println(movies)
+	json.NewEncoder(w).Encode(movies)
+}
+
+func (s *Server) ActedHandler(w http.ResponseWriter, r *http.Request) {
+	actedIdStr := chi.URLParam(r, "id")
+	actedID, _ := strconv.Atoi(actedIdStr)
+	movies, err := s.db.GetMoviesByActorID(actedID)
+	if err != nil {
+		http.Error(w, "Error fetching actors", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+    fmt.Println(movies)
+	json.NewEncoder(w).Encode(movies)
 }
 
 func (s *Server) ToggleWatchlistHandler(w http.ResponseWriter, r *http.Request) {

@@ -10,7 +10,6 @@ export default function CreateAccount() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [accountCreated, setAccountCreated] = useState(false);
-    const [remainingSeconds, setRemainingSeconds] = useState(3);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -36,18 +35,13 @@ export default function CreateAccount() {
         if (accountCreated) {
             const redirectTimeout = setTimeout(() => {
                 navigate('/login');
-            }, remainingSeconds * 1000);
-
-            const interval = setInterval(() => {
-                setRemainingSeconds((prevSeconds) => prevSeconds - 1);
-            }, 1000);
+            }, 100);
 
             return () => {
                 clearTimeout(redirectTimeout);
-                clearInterval(interval);
             };
         }
-    }, [accountCreated, remainingSeconds, navigate]);
+    }, [accountCreated, navigate]);
 
 
     return (
@@ -78,12 +72,6 @@ export default function CreateAccount() {
                             >
                                 Create an account
                             </button>
-
-                            {accountCreated && (
-                                <p className="text-xl font-medium text-center text-gray-400">
-                                    Account created successfully. Redirecting in {remainingSeconds} seconds...
-                                </p>
-                            )}
                             <p className="text-xl font-light text-gray-500 dark:text-gray-400">
                                 Already have an account? <a href="/login" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Login here</a>
                             </p>

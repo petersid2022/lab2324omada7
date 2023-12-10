@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactStars from "react-rating-stars-component";
 import ReviewCard from './ReviewCard';
+import { TiArrowBack } from 'react-icons/ti';
 import { useParams, useNavigate } from 'react-router-dom';
 import '../App.css';
 
@@ -83,7 +84,8 @@ export default function MovieView() {
         <div className="max-w-fit">
             <div className="mr-4 ml-4 mt-4">
                 <button onClick={goBack} className="hover:no-underline">
-                    <div className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow text-xl">
+                    <div className="flex fitems-center bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1.5 px-3 rounded shadow text-xl">
+                        <TiArrowBack className="mt-1 mr-1" />
                         <span>Go Back</span>
                     </div>
                 </button>
