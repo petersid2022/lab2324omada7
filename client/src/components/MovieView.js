@@ -81,45 +81,59 @@ export default function MovieView() {
 
     return (
         <div className="max-w-fit">
-            <div className="m-4">
+            <div className="mr-4 ml-4 mt-4">
                 <button onClick={goBack} className="hover:no-underline">
-                    <div className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow text-xl">
+                    <div className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded shadow text-xl">
                         <span>Go Back</span>
                     </div>
                 </button>
             </div>
 
             <div className="flex justify-center w-screen">
-                <div className="m-4 bg-white text-gray-800 rounded-lg overflow-hidden shadow-xl border border-gray-700">
+                <div className="m-4 bg-white text-gray-800 rounded-lg overflow-hidden shadow-2xl">
                     <div className="px-6 py-3">
-                        <div className="font-bold text-2xl">
-                            <h1 className="text-gray-800 transition-colors duration-300">
-                                {movie.Title}
-                            </h1>
+                        <div className="flex items-center mt-2">
+                            <img
+                                className="object-cover h-32 w-32 mr-4 rounded"
+                                src="https://images.unsplash.com/photo-1595769816263-9b910be24d5f?q=80&w=2079&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                                alt="Movie"
+                            />
+                            <div className="flex flex-col">
+                                <div className="font-bold text-2xl">
+                                    <h1 className="text-gray-800 transition-colors duration-300">
+                                        {movie.Title}
+                                    </h1>
+                                </div>
+                                <p className="text-gray-900 text-2xl">Average Rating: {movie.AvgRating}/5</p>
+                                <p className="text-gray-900 text-2xl">Πρώτη προβολή: {movie.ReleaseDate}</p>
+                                <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
+                            </div>
                         </div>
-                        <p className="text-gray-900 text-2xl">Average Rating: {movie.AvgRating}/5</p>
-                        <p className="text-gray-900 text-2xl">Πρώτη προβολή: {movie.ReleaseDate}</p>
-                        <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
                         <br />
                         {isAuthenticated && (
                             <div>
                                 <div className="flex items-center">
                                     <span> Add to watchlist? </span>
-                                    <input onChange={addedToWatchlist} className="mx-2" type="checkbox" />
+                                    <input onChange={addedToWatchlist} className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mx-2" type="checkbox" />
                                     <span className="ml-4"> Add to liked? </span>
-                                    <input onChange={addedToLiked} className="mx-2" type="checkbox" />
+                                    <input onChange={addedToLiked} className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mx-2" type="checkbox" />
                                 </div>
                                 <form onSubmit={handleSubmit}>
-                                    <div className="flex items-center my-1">
+                                    <div className="flex items-center mt-1">
                                         <label>
-                                            Watched it? Why not give it a short review?
-                                            <input
-                                                className="mx-2 border border-gray-700"
-                                                type="text"
+                                            Watched it? Why not give it a short review:
+                                            <textarea
+                                                className="mt-2 block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                                                rows="4"
+                                                maxLength={200}
                                                 value={inputValue}
                                                 onChange={handleTextChange}
-                                            />
+                                            ></textarea>
                                         </label>
+                                    </div>
+                                    <label className="flex flex-row items-center">
+                                        And a rating:
+                                        <div className="w-1"></div>
                                         <ReactStars
                                             count={5}
                                             onChange={ratingChanged}
@@ -127,7 +141,7 @@ export default function MovieView() {
                                             activeColor="#ffd700"
                                             value={rating}
                                         />
-                                    </div>
+                                    </label>
                                     <button className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow" type="submit">Submit</button>
                                 </form>
                             </div>
@@ -136,10 +150,10 @@ export default function MovieView() {
                             Reviews
                         </h1>
                         <h1 className="text-center font-light text-xl text-gray-800 transition-colors duration-300">
-                            see what other people had to say about this movie!
+                            see what other people had to say about {movie.Title}
                         </h1>
                     </div>
-                    <div className="w-full flex flex-wrap justify-around">
+                    <div className="max-w-4xl flex flex-wrap justify-evenly">
                         {reviews.map((review, index) => (
                             <ReviewCard
                                 key={index}

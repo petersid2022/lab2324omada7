@@ -27,7 +27,7 @@ type Service interface {
 	AuthenticateUser(username string, password string) (User, string, error)
 	RegisterUser(username string, password string, email string) (string, error)
 	GetUserData(id int) (User, error)
-    ToggleWatchlist(movieID, userID int) error
+	ToggleWatchlist(movieID, userID int) error
 }
 
 type User struct {
@@ -214,70 +214,82 @@ func (s *service) ShowReview(url string) ([]Review, error) {
 }
 
 func (s *service) AddReview(url string, stars int, reviewText string, username string) {
-    modifiedTitle := strings.ReplaceAll(url, "-", " ")
+	modifiedTitle := strings.ReplaceAll(url, "-", " ")
 
-    selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
-    movieRow, err := s.db.Query(selectDataQuery)
-    if err != nil {
-        panic(err.Error())
-    }
-    defer movieRow.Close()
+	selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
+	movieRow, err := s.db.Query(selectDataQuery)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer movieRow.Close()
 
-    var movie Movie
-    if movieRow.Next() {
-        err := movieRow.Scan(&movie.Id, &movie.Title, &movie.ReleaseDate, &movie.Genre, &movie.AvgRating)
-        if err != nil {
-            panic(err.Error())
-        }
-    }
+	var movie Movie
+	if movieRow.Next() {
+		err := movieRow.Scan(&movie.Id, &movie.Title, &movie.ReleaseDate, &movie.Genre, &movie.AvgRating)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
 
-    getUserIDQuery := fmt.Sprintf("SELECT user_id FROM user WHERE Username=%q", username)
-    var userID int
-    err = s.db.QueryRow(getUserIDQuery).Scan(&userID)
-    if err != nil {
-        panic(err.Error())
-    }
+	getUserIDQuery := fmt.Sprintf("SELECT user_id FROM user WHERE Username=%q", username)
+	var userID int
+	err = s.db.QueryRow(getUserIDQuery).Scan(&userID)
+	if err != nil {
+		panic(err.Error())
+	}
 
-    existingReviewQuery := fmt.Sprintf("SELECT review_id FROM wrote WHERE user_id = %d AND movie_id = %d", userID, movie.Id)
-    var existingReviewID int
-    err = s.db.QueryRow(existingReviewQuery).Scan(&existingReviewID)
+	existingReviewQuery := "SELECT r.review_id FROM wrote w JOIN review r ON w.review_id = r.review_id WHERE w.user_id = ? AND r.movie_id = ?"
+	rows, err := s.db.Query(existingReviewQuery, userID, movie.Id)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer rows.Close()
 
-    currentTime := time.Now()
-    dateToday := fmt.Sprintf("%d-%d-%d", currentTime.Year(), currentTime.Month(), currentTime.Day())
+	var existingReviewIDs []int
+	for rows.Next() {
+		var reviewID int
+		if err := rows.Scan(&reviewID); err != nil {
+			panic(err.Error())
+		}
+		existingReviewIDs = append(existingReviewIDs, reviewID)
+	}
 
-    if existingReviewID != 0 {
-        updateReviewQuery := "UPDATE review SET ReviewText = ?, RatingStars = ?, DatePosted = ? WHERE review_id = ?"
-        _, err = s.db.Exec(updateReviewQuery, reviewText, stars, dateToday, existingReviewID)
-        if err != nil {
-            panic(err.Error())
-        }
-    } else {
-        insertReviewQuery := fmt.Sprintf("INSERT INTO review (ReviewText, RatingStars, DatePosted, movie_id) VALUES (%q, %d, '%s', %d);", reviewText, stars, dateToday, movie.Id)
+	currentTime := time.Now()
+	dateToday := fmt.Sprintf("%d-%d-%d", currentTime.Year(), currentTime.Month(), currentTime.Day())
 
-        _, err = s.db.Exec(insertReviewQuery)
-        if err != nil {
-            panic(err.Error())
-        }
+	if len(existingReviewIDs) > 0 {
+		updateReviewQuery := "UPDATE review SET ReviewText = ?, RatingStars = ?, DatePosted = ? WHERE review_id = ?"
+		_, err = s.db.Exec(updateReviewQuery, reviewText, stars, dateToday, existingReviewIDs[len(existingReviewIDs)-1])
+		if err != nil {
+			panic(err.Error())
+		}
+	} else {
+		insertReviewQuery := fmt.Sprintf("INSERT INTO review (ReviewText, RatingStars, DatePosted, movie_id) VALUES (%q, %d, '%s', %d);", reviewText, stars, dateToday, movie.Id)
 
-        getLastReviewIDQuery := "SELECT LAST_INSERT_ID()"
-        var lastReviewID int
-        err = s.db.QueryRow(getLastReviewIDQuery).Scan(&lastReviewID)
-        if err != nil {
-            panic(err.Error())
-        }
+		_, err = s.db.Exec(insertReviewQuery)
+		if err != nil {
+			panic(err.Error())
+		}
 
-        insertWroteQuery := "INSERT INTO wrote (review_id, user_id) VALUES (?, ?)"
-        _, err = s.db.Exec(insertWroteQuery, lastReviewID, userID)
-        if err != nil {
-            panic(err.Error())
-        }
-    }
+		getLastReviewIDQuery := "SELECT LAST_INSERT_ID()"
+		var lastReviewID int
+		err = s.db.QueryRow(getLastReviewIDQuery).Scan(&lastReviewID)
+		if err != nil {
+			panic(err.Error())
+		}
 
-    updateAvgRatingQuery := fmt.Sprintf("UPDATE movie SET AvgRating = (SELECT AVG(RatingStars) FROM review WHERE movie_id = %d) WHERE movie_id = %d", movie.Id, movie.Id)
-    _, err = s.db.Exec(updateAvgRatingQuery)
-    if err != nil {
-        panic(err.Error())
-    }
+		insertWroteQuery := "INSERT INTO wrote (review_id, user_id) VALUES (?, ?)"
+		_, err = s.db.Exec(insertWroteQuery, lastReviewID, userID)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	updateAvgRatingQuery := fmt.Sprintf("UPDATE movie SET AvgRating = (SELECT AVG(RatingStars) FROM review WHERE movie_id = %d) WHERE movie_id = %d", movie.Id, movie.Id)
+	_, err = s.db.Exec(updateAvgRatingQuery)
+	if err != nil {
+		panic(err.Error())
+	}
 }
 
 func hashPassword(password string) (string, error) {
@@ -338,37 +350,37 @@ func comparePasswords(hashedPassword string, password string) bool {
 }
 
 func (s *service) AuthenticateUser(username string, password string) (User, string, error) {
-    selectUserQuery := fmt.Sprintf("SELECT * FROM user WHERE Username=%q", username)
-    userRow, err := s.db.Query(selectUserQuery)
-    if err != nil {
-        return User{}, "", err
-    }
-    defer userRow.Close()
+	selectUserQuery := fmt.Sprintf("SELECT * FROM user WHERE Username=%q", username)
+	userRow, err := s.db.Query(selectUserQuery)
+	if err != nil {
+		return User{}, "", err
+	}
+	defer userRow.Close()
 
-    var user User
-    if userRow.Next() {
-        err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
-        if err != nil {
-            return User{}, "", err
-        }
-    } else {
-        return User{}, "", errors.New("username not found")
-    }
+	var user User
+	if userRow.Next() {
+		err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+		if err != nil {
+			return User{}, "", err
+		}
+	} else {
+		return User{}, "", errors.New("username not found")
+	}
 
-    if comparePasswords(user.Password, password) {
-        log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
-        token, err := createToken(user.ID)
-        if err != nil {
-            log.Println("Error creating token:", err)
-            return User{}, "", errors.New("Error creating token")
-        }
+	if comparePasswords(user.Password, password) {
+		log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
+		token, err := createToken(user.ID)
+		if err != nil {
+			log.Println("Error creating token:", err)
+			return User{}, "", errors.New("Error creating token")
+		}
 
-        return user, token, nil
-    } else {
-        fmt.Printf("Hashed Password: %s, Provided Password: %s\n", user.Password, password)
-    }
+		return user, token, nil
+	} else {
+		fmt.Printf("Hashed Password: %s, Provided Password: %s\n", user.Password, password)
+	}
 
-    return User{}, "", nil
+	return User{}, "", nil
 }
 
 func (s *service) ToggleWatchlist(movieID, userID int) error {
