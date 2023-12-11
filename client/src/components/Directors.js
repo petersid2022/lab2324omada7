@@ -87,7 +87,7 @@ const Directors = () => {
     return (
         <div>
             <NavBar searchTerm={searchTerm} handleChange={handleChange} />
-            <div className="w-full py-24 flex justify-start">{directorsList}</div>
+            <div className="w-full py-24 grid grid-cols-6 gap-4">{directorsList}</div>
         </div>
     );
 }

@@ -72,10 +72,10 @@ export default function MovieView() {
     let members;
 
     if (staff && staff.length > 0) {
-        members = staff[0];
+        members = staff;
         console.log(members);
     } else {
-        console.log('Staff is empty or undefined');
+        console.log('empty or undefined');
     }
 
     const generateRoleUrl = (role) => {
@@ -123,7 +123,7 @@ export default function MovieView() {
                     <div className="px-6 py-3">
                         <div className="flex items-center mt-2">
                             <img
-                                className="object-cover h-40 w-40 mr-4 rounded"
+                                className="object-cover h-48 w-48 mr-4 rounded"
                                 src="https://images.unsplash.com/photo-1595769816263-9b910be24d5f?q=80&w=2079&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                                 alt="Movie"
                             />
@@ -133,13 +133,14 @@ export default function MovieView() {
                                         {movie.Title}
                                     </h1>
                                 </div>
-                                {members ? (
-                                    <Link to={`${generateRoleUrl(members.role)}/${members.type_id}`}>
-                                        <p className="text-gray-900 text-2xl">{members.role}: {members.name}</p>
-                                    </Link>
-                                ) : (
-                                    <p className="text-gray-900 text-2xl">N/A</p>
-                                )}
+                                {members
+                                    ? members.map((member, index) => (
+                                        <Link key={index} to={`${generateRoleUrl(member.role)}/${member.type_id}`}>
+                                            <p className="text-gray-900 text-2xl">{member.role}: {member.name}</p>
+                                        </Link>
+                                    ))
+                                    : <p className="text-gray-900 text-2xl">N/A</p>
+                                }
                                 <p className="text-gray-900 text-2xl">Μέση Βαθμολογία: {movie.AvgRating}/5</p>
                                 <p className="text-gray-900 text-2xl">Ημερομηνία πρώτης προβολής: {movie.ReleaseDate}</p>
                                 <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
@@ -185,7 +186,7 @@ export default function MovieView() {
                         <h1 className="mt-4 text-center font-bold text-2xl text-gray-800 transition-colors duration-300">
                             Reviews
                         </h1>
-                        <h1 className="text-center font-light text-xl text-gray-800 transition-colors duration-300">
+                        <h1 className="text-center font-normal text-xl text-gray-800 transition-colors duration-300">
                             see what other people had to say about {movie.Title}
                         </h1>
                     </div>
