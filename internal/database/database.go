@@ -29,7 +29,7 @@ type Service interface {
 	GetActor(id string) (Actor, error)
 	ShowReview(url string) ([]Review, error)
 	AddReview(url string, stars int, reviewText string, userName string)
-	AuthenticateUser(username string, password string) (User, string, error)
+	AuthenticateUser(username string, password string) (User, string, string)
 	RegisterUser(username string, password string, email string) (string, error)
 	GetUserData(id int) (User, error)
 	ToggleWatchlist(movieID, userID int) error
@@ -672,38 +672,36 @@ func comparePasswords(hashedPassword string, password string) bool {
 	}
 }
 
-func (s *service) AuthenticateUser(username string, password string) (User, string, error) {
-	selectUserQuery := fmt.Sprintf("SELECT * FROM user WHERE Username=%q", username)
-	userRow, err := s.db.Query(selectUserQuery)
-	if err != nil {
-		return User{}, "", err
-	}
-	defer userRow.Close()
+func (s *service) AuthenticateUser(username string, password string) (User, string, string) {
+    selectUserQuery := fmt.Sprintf("SELECT * FROM user WHERE Username=%q", username)
+    userRow, err := s.db.Query(selectUserQuery)
+    if err != nil {
+        return User{}, "", "database error"
+    }
+    defer userRow.Close()
 
-	var user User
-	if userRow.Next() {
-		err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
-		if err != nil {
-			return User{}, "", err
-		}
-	} else {
-		return User{}, "", errors.New("username not found")
-	}
+    var user User
+    if userRow.Next() {
+        err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+        if err != nil {
+            return User{}, "", "database error"
+        }
+    } else {
+        return User{}, "", "usernotfound"
+    }
 
-	if comparePasswords(user.Password, password) {
-		log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
-		token, err := createToken(user.ID)
-		if err != nil {
-			log.Println("Error creating token:", err)
-			return User{}, "", errors.New("Error creating token")
-		}
+    if comparePasswords(user.Password, password) {
+        log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
+        token, err := createToken(user.ID)
+        if err != nil {
+            log.Println("Error creating token:", err)
+            return User{}, "", "token creation error"
+        }
 
-		return user, token, nil
-	} else {
-		fmt.Printf("Hashed Password: %s, Provided Password: %s\n", user.Password, password)
-	}
-
-	return User{}, "", nil
+        return user, token, ""
+    } else {
+        return User{}, "", "passNoMatch"
+    }
 }
 
 func (s *service) ToggleWatchlist(movieID, userID int) error {
