@@ -15,6 +15,11 @@ import (
 
 var JWT_SECRET = []byte(fmt.Sprint(os.Getenv("KEY")))
 
+type WatchlistPayload struct {
+	MovieID int `json:"movieId"`
+	Username string `json:"userName"`
+}
+
 type UserPayload struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -40,12 +45,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Get("/api/movies/{title}", s.GetMovieHandler)
 	r.Get("/api/movies/reviews/{title}", s.GetReviewsHandler)
 	r.Get("/userdata/{id}", s.UserDataHandler)
-    r.Get("/api/directors/{id}", s.DirectedHandler)
-    r.Get("/api/actors/{id}", s.ActedHandler)
+	r.Get("/api/directors/{id}", s.DirectedHandler)
+	r.Get("/api/actors/{id}", s.ActedHandler)
 	r.Post("/api/movies/add-review/{title}/{stars}", s.AddReviewHandler)
 	r.Post("/create-account", s.CreateAccountHandler)
 	r.Post("/login", s.LoginHandler)
-	r.Post("/watchlist/{movieID}/{userID}", s.ToggleWatchlistHandler)
+	r.Post("/api/watchlist", s.ToggleWatchlistHandler)
+    r.Get("/watchlist-status/{movie_id}/{username}", s.GetWatchlistHandler)
 
 	return r
 }
@@ -105,11 +111,11 @@ func (s *Server) GetActorHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetAllMovieStaffHandler(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-    movie, err := s.db.GetMovie(name)
-    if err != nil {
-        fmt.Println(err)
+	movie, err := s.db.GetMovie(name)
+	if err != nil {
+		fmt.Println(err)
 		log.Fatalf("Failed to get movie. Err: %v", err)
-    }
+	}
 	getStaff, err := s.db.GetStaffByMovieID(movie.Id)
 	if err != nil {
 		log.Fatalf("Failed to get staff. Err: %v", err)
@@ -155,7 +161,7 @@ func (s *Server) AddReviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	s.db.AddReview(title, starsNum, reviewText, userNameText)
 	w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode("ok")
+	json.NewEncoder(w).Encode("ok")
 }
 
 func (s *Server) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
@@ -235,7 +241,7 @@ func (s *Server) DirectedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-    fmt.Println(movies)
+	fmt.Println(movies)
 	json.NewEncoder(w).Encode(movies)
 }
 
@@ -248,30 +254,42 @@ func (s *Server) ActedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-    fmt.Println(movies)
+	fmt.Println(movies)
 	json.NewEncoder(w).Encode(movies)
 }
 
 func (s *Server) ToggleWatchlistHandler(w http.ResponseWriter, r *http.Request) {
-	movieid := chi.URLParam(r, "movieID")
-	userid := chi.URLParam(r, "userID")
-	movieIDNum, _ := strconv.Atoi(movieid)
-	fmt.Println(movieIDNum)
-	userIDNum, _ := strconv.Atoi(userid)
-	fmt.Println(userIDNum)
-	err := s.db.ToggleWatchlist(movieIDNum, userIDNum)
-	if err != nil {
-		if errors.Is(err, errors.New("no user")) {
-			http.Error(w, "No user found", http.StatusNotFound)
-			return
-		} else {
-			log.Printf("Failed to get review. Err: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
+	var payload WatchlistPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+	username := payload.Username
+    userid := s.db.GetUserID(username)
+	movieId := payload.MovieID
+    err := s.db.ToggleWatchlist(movieId, userid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+    fmt.Println("toggled watchlist successfully for user:", username, " and movie_id:", movieId)
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "ok",
+	})
 }
 
+func (s *Server) GetWatchlistHandler(w http.ResponseWriter, r *http.Request) {
+    movieIdStr := chi.URLParam(r, "movie_id")
+	movieID, _ := strconv.Atoi(movieIdStr)
+    username := chi.URLParam(r, "username")
+    status := s.db.GetWatchlistStatus(movieID, username)
+    //fmt.Println("watchlist status for user:", username, " and movie_id:", movieID, " == ", status)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "ok",
+        "data": status,
+	})
+}
 //func (s *Server) UserDataHandler(w http.ResponseWriter, r *http.Request) {
 //	decoder := json.NewDecoder(r.Body)
 //	var requestData struct {

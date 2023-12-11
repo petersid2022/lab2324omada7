@@ -16,6 +16,7 @@ export default function MovieView() {
     const [rating, setRating] = useState(0);
     const isAuthenticated = localStorage.getItem('loggedIn') === 'true';
     const username = localStorage.getItem('username');
+    const [isInWatchlist, setIsInWatchlist] = useState(false);
 
     const handleTextChange = (e) => {
         setInputValue(e.target.value);
@@ -57,25 +58,66 @@ export default function MovieView() {
         console.log(out);
     };
 
-    const addedToWatchlist = (e) => {
-        const out = e.target.checked ? 1 : 0;
-        console.log(out);
+    const addedToWatchlist = async (e) => {
+        const isChecked = e.target.checked;
+
+        try {
+            const response = await fetch(`http://localhost:1313/api/watchlist`, {
+                method: 'POST',
+                crossDomain: true,
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+                body: JSON.stringify({
+                    movieId: movie.movie_id,
+                    userName: username,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.status === 'ok') {
+                console.log('Toggled movie watchlist for user', username);
+                setIsInWatchlist(isChecked);
+            }
+        } catch (error) {
+            console.error('Error', error);
+        }
     };
 
     useEffect(() => {
-        fetch(`http://localhost:1313/api/movies/staff/${modifiedTitle}`)
-            .then(response => response.json())
-            .then(data => setStaff(data))
-            .catch(error => console.error('Error fetching movie items:', error));
-    }, [modifiedTitle]);
+        const fetchMovieData = async () => {
+            try {
+                const movieResponse = await fetch(`http://localhost:1313/api/movies/${modifiedTitle}`);
+                const movieData = await movieResponse.json();
+                setMovie(movieData);
+
+                const staffResponse = await fetch(`http://localhost:1313/api/movies/staff/${modifiedTitle}`);
+                const staffData = await staffResponse.json();
+                setStaff(staffData);
+
+                const reviewResponse = await fetch(`http://localhost:1313/api/movies/reviews/${modifiedTitle}`);
+                const reviewData = await reviewResponse.json();
+                setReview(reviewData);
+
+                const watchlistStatusResponse = await fetch(`http://localhost:1313/watchlist/${movieData.movie_id}/${username}`);
+                const watchlistStatusData = await watchlistStatusResponse.json();
+
+                setIsInWatchlist(watchlistStatusData.status === 'ok');
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+
+        fetchMovieData();
+    }, [modifiedTitle, username]);
 
     let members;
-
     if (staff && staff.length > 0) {
         members = staff;
         console.log(members);
-    } else {
-        console.log('empty or undefined');
     }
 
     const generateRoleUrl = (role) => {
@@ -86,20 +128,6 @@ export default function MovieView() {
         }
         return '/';
     };
-
-    useEffect(() => {
-        fetch(`http://localhost:1313/api/movies/${modifiedTitle}`)
-            .then(response => response.json())
-            .then(data => setMovie(data))
-            .catch(error => console.error('Error fetching movie items:', error));
-    }, [modifiedTitle]);
-
-    useEffect(() => {
-        fetch(`http://localhost:1313/api/movies/reviews/${modifiedTitle}`)
-            .then(response => response.json())
-            .then(data => setReview(data))
-            .catch(error => console.error('Error fetching review items:', error));
-    }, [modifiedTitle]);
 
     const navigate = useNavigate();
 
@@ -151,7 +179,7 @@ export default function MovieView() {
                             <div>
                                 <div className="flex items-center">
                                     <span> Add to watchlist? </span>
-                                    <input onChange={addedToWatchlist} className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mx-2" type="checkbox" />
+                                    <input onChange={addedToWatchlist} className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mx-2" type="checkbox" checked={isInWatchlist} />
                                     <span className="ml-4"> Add to liked? </span>
                                     <input onChange={addedToLiked} className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mx-2" type="checkbox" />
                                 </div>

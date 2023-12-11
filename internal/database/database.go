@@ -36,6 +36,8 @@ type Service interface {
 	GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error)
 	GetMoviesByActorID(actorID int) ([]ActedMovie, error)
 	GetStaffByMovieID(movieID int) ([]StaffMember, error)
+	GetUserID(username string) int
+	GetWatchlistStatus(movieID int, username string) string
 }
 
 type StaffMember struct {
@@ -141,6 +143,18 @@ func (s *service) Health() map[string]string {
 	}
 }
 
+func (s *service) GetUserID(username string) int {
+	selectDataQuery := fmt.Sprintf("SELECT user_id FROM user where Username=%q", username)
+
+	var userID int
+	err := s.db.QueryRow(selectDataQuery).Scan(&userID)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return userID
+}
+
 func (s *service) GetMovies() []Movie {
 	selectDataQuery := "SELECT * FROM movie"
 
@@ -164,6 +178,19 @@ func (s *service) GetMovies() []Movie {
 	fmt.Println(movies)
 
 	return movies
+}
+
+func (s *service) GetWatchlistStatus(movieID int, username string) string {
+	selectDataQuery := "SELECT EXISTS (SELECT 1 FROM adds_to_watchlist WHERE movie_id = ? AND user_id = ?) AS watchlist_status"
+
+	var watchlistStatus string
+	err := s.db.QueryRow(selectDataQuery, movieID, s.GetUserID(username)).Scan(&watchlistStatus)
+	if err != nil {
+		log.Printf("Error checking watchlist status: %v", err)
+		return "error"
+	}
+
+	return watchlistStatus
 }
 
 func (s *service) GetMovie(url string) (Movie, error) {
@@ -331,8 +358,8 @@ func (s *service) GetStaffByMovieID(movieID int) ([]StaffMember, error) {
 		var member StaffMember
 		err := rows.Scan(
 			&member.ID,
-            &member.MTitle,
-            &member.TypeID,
+			&member.MTitle,
+			&member.TypeID,
 			&member.Name,
 			&member.Role,
 		)
@@ -664,27 +691,23 @@ func (s *service) AuthenticateUser(username string, password string) (User, stri
 }
 
 func (s *service) ToggleWatchlist(movieID, userID int) error {
-	query := "SELECT 1 FROM ADDS_TO_WATCHLIST WHERE movie_id = ? AND user_id = ? LIMIT 1"
-	row := s.db.QueryRow(query, movieID, userID)
-	var exists int
-	err := row.Scan(&exists)
-	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check if entry exists: %v", err)
+	var exists bool
+	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM adds_to_watchlist WHERE movie_id = ? AND user_id = ?)", movieID, userID).Scan(&exists)
+	if err != nil {
+		return err
 	}
-	currentTime := time.Now()
-	dateToday := fmt.Sprintf("%d-%d-%d", currentTime.Year(), currentTime.Month(), currentTime.Day())
-	if exists == 1 {
-		deleteQuery := "DELETE FROM ADDS_TO_WATCHLIST WHERE movie_id = ? AND user_id = ?"
-		_, err := s.db.Exec(deleteQuery, movieID, userID)
+
+	if exists {
+		_, err = s.db.Exec("DELETE FROM adds_to_watchlist WHERE movie_id = ? AND user_id = ?", movieID, userID)
 		if err != nil {
-			return fmt.Errorf("failed to delete from watchlist: %v", err)
+			return err
 		}
 	} else {
-		query := "INSERT INTO ADDS_TO_WATCHLIST (movie_id, user_id, DateAdded) VALUES (?, ?, ?)"
-		_, err := s.db.Exec(query, movieID, userID, dateToday)
+		_, err = s.db.Exec("INSERT INTO adds_to_watchlist (movie_id, user_id, DateAdded) VALUES (?, ?, ?)", movieID, userID, time.Now())
 		if err != nil {
-			return fmt.Errorf("failed to insert into watchlist: %v", err)
+			return err
 		}
 	}
+
 	return nil
 }
