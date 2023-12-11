@@ -15,8 +15,13 @@ import (
 
 var JWT_SECRET = []byte(fmt.Sprint(os.Getenv("KEY")))
 
+type LikedPayload struct {
+	MovieID string `json:"movieId"`
+	Username string `json:"userName"`
+}
+
 type WatchlistPayload struct {
-	MovieID int `json:"movieId"`
+	MovieID string `json:"movieId"`
 	Username string `json:"userName"`
 }
 
@@ -51,7 +56,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Post("/create-account", s.CreateAccountHandler)
 	r.Post("/login", s.LoginHandler)
 	r.Post("/api/watchlist", s.ToggleWatchlistHandler)
-    r.Get("/watchlist-status/{movie_id}/{username}", s.GetWatchlistHandler)
+    r.Get("/watchlistStatus/{movie_id}/{username}", s.GetWatchlistHandler)
+	r.Post("/api/liked", s.ToggleLikedHandler)
+    r.Get("/likedStatus/{movie_id}/{username}", s.GetLikedHandler)
 
 	return r
 }
@@ -267,7 +274,8 @@ func (s *Server) ToggleWatchlistHandler(w http.ResponseWriter, r *http.Request) 
 	username := payload.Username
     userid := s.db.GetUserID(username)
 	movieId := payload.MovieID
-    err := s.db.ToggleWatchlist(movieId, userid)
+    movieIdNum, _ := s.db.GetMovie(movieId)
+    err := s.db.ToggleWatchlist(movieIdNum.Id, userid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -279,11 +287,45 @@ func (s *Server) ToggleWatchlistHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+func (s *Server) ToggleLikedHandler(w http.ResponseWriter, r *http.Request) {
+	var payload LikedPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	username := payload.Username
+    userid := s.db.GetUserID(username)
+	movieId := payload.MovieID
+    movieIdNum, _ := s.db.GetMovie(movieId)
+    err := s.db.ToggleLiked(movieIdNum.Id, userid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+    fmt.Println("toggled liked successfully for user:", username, " and movie_id:", movieId)
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "ok",
+	})
+}
+
 func (s *Server) GetWatchlistHandler(w http.ResponseWriter, r *http.Request) {
     movieIdStr := chi.URLParam(r, "movie_id")
 	movieID, _ := strconv.Atoi(movieIdStr)
     username := chi.URLParam(r, "username")
     status := s.db.GetWatchlistStatus(movieID, username)
+    //fmt.Println("watchlist status for user:", username, " and movie_id:", movieID, " == ", status)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "ok",
+        "data": status,
+	})
+}
+
+func (s *Server) GetLikedHandler(w http.ResponseWriter, r *http.Request) {
+    movieIdStr := chi.URLParam(r, "movie_id")
+	movieID, _ := strconv.Atoi(movieIdStr)
+    username := chi.URLParam(r, "username")
+    status := s.db.GetLikedStatus(movieID, username)
     //fmt.Println("watchlist status for user:", username, " and movie_id:", movieID, " == ", status)
 	json.NewEncoder(w).Encode(map[string]string{
 		"status": "ok",

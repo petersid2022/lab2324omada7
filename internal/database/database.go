@@ -33,11 +33,13 @@ type Service interface {
 	RegisterUser(username string, password string, email string) (string, error)
 	GetUserData(id int) (User, error)
 	ToggleWatchlist(movieID, userID int) error
+	ToggleLiked(movieID, userID int) error
 	GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error)
 	GetMoviesByActorID(actorID int) ([]ActedMovie, error)
 	GetStaffByMovieID(movieID int) ([]StaffMember, error)
 	GetUserID(username string) int
 	GetWatchlistStatus(movieID int, username string) string
+	GetLikedStatus(movieID int, username string) string
 }
 
 type StaffMember struct {
@@ -178,6 +180,20 @@ func (s *service) GetMovies() []Movie {
 	fmt.Println(movies)
 
 	return movies
+}
+
+func (s *service) GetLikedStatus(movieID int, username string) string {
+	selectDataQuery := "SELECT EXISTS (SELECT 1 FROM likes WHERE movie_id = ? AND user_id = ?) AS likes_status"
+
+	var likesStatus string
+	err := s.db.QueryRow(selectDataQuery, movieID, s.GetUserID(username)).Scan(&likesStatus)
+	if err != nil {
+		log.Printf("Error checking likes status: %v", err)
+		return "error"
+	}
+    fmt.Println(likesStatus)
+
+	return likesStatus
 }
 
 func (s *service) GetWatchlistStatus(movieID int, username string) string {
@@ -704,6 +720,28 @@ func (s *service) ToggleWatchlist(movieID, userID int) error {
 		}
 	} else {
 		_, err = s.db.Exec("INSERT INTO adds_to_watchlist (movie_id, user_id, DateAdded) VALUES (?, ?, ?)", movieID, userID, time.Now())
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *service) ToggleLiked(movieID, userID int) error {
+	var exists bool
+	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE movie_id = ? AND user_id = ?)", movieID, userID).Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		_, err = s.db.Exec("DELETE FROM likes WHERE movie_id = ? AND user_id = ?", movieID, userID)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err = s.db.Exec("INSERT INTO likes (movie_id, user_id, DateAdded) VALUES (?, ?, ?)", movieID, userID, time.Now())
 		if err != nil {
 			return err
 		}
