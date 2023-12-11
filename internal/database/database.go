@@ -205,7 +205,6 @@ func (s *service) GetWatchlistStatus(movieID int, username string) string {
 		log.Printf("Error checking watchlist status: %v", err)
 		return "error"
 	}
-
 	return watchlistStatus
 }
 

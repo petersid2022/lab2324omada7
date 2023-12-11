@@ -16,8 +16,88 @@ export default function MovieView() {
     const [rating, setRating] = useState(0);
     const isAuthenticated = localStorage.getItem('loggedIn') === 'true';
     const username = localStorage.getItem('username');
-    const [isInLikes, setIsInLikesValue] = useState('');
-    const [isInWatchlist, setIsInWatchlistValue] = useState('');
+    const [watchlistStatus, setWatchlistStatus] = useState('');
+    const [likedStatus, setLikedStatus] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+
+        fetch(`http://localhost:1313/watchlistStatus/${modifiedTitle}/${username}`)
+            .then(response => response.json())
+            .then(data => {
+                const newWatchlistStatus = data.data;
+                setWatchlistStatus(newWatchlistStatus);
+            })
+            .catch(error => {
+                console.error('Error fetching watchlist status:', error);
+            });
+
+        fetch(`http://localhost:1313/likedStatus/${modifiedTitle}/${username}`)
+            .then(response => response.json())
+            .then(data => {
+                const newLikedStatus = data.data;
+                setLikedStatus(newLikedStatus);
+            })
+            .catch(error => {
+                console.error('Error fetching liked status:', error);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    }, [modifiedTitle, username]);
+
+    const handleWatchlistButtonClick = () => {
+        const newWatchlistStatus = watchlistStatus === 'added' ? 'not added' : 'added';
+
+        const watchlistPayload = {
+            MovieID: modifiedTitle,
+            Username: username,
+        };
+
+        fetch('http://localhost:1313/api/watchlist', {
+            method: 'POST',
+            crossDomain: true,
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            body: JSON.stringify(watchlistPayload),
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Watchlist status updated:', data);
+                setWatchlistStatus(newWatchlistStatus);
+            })
+            .catch(error => console.error('Error updating watchlist status:', error));
+    };
+
+    const handleLikedButtonClick = () => {
+        const newLikedStatus = likedStatus === 'liked' ? 'not liked' : 'liked';
+
+        const likedPayload = {
+            MovieID: modifiedTitle,
+            Username: username,
+        };
+
+        fetch('http://localhost:1313/api/liked', {
+            method: 'POST',
+            crossDomain: true,
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            body: JSON.stringify(likedPayload),
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Liked status updated:', data);
+                setLikedStatus(newLikedStatus);
+            })
+            .catch(error => console.error('Error updating liked status:', error));
+    };
 
     const handleTextChange = (e) => {
         setInputValue(e.target.value);
@@ -45,67 +125,8 @@ export default function MovieView() {
             console.log('Review and rating submitted successfully:', data);
             setInputValue('');
             setRating(0);
-        }).catch((error) => {
-            console.error('Error submitting review and rating:', error);
-        });
+        }).catch((error) => { console.error('Error submitting review and rating:', error); });
     };
-
-    const addedToLiked = (e) => {
-        const checked = e.target.checked;
-        const payload = {
-            userName: username,
-            movieID: modifiedTitle,
-        };
-
-        fetch('http://localhost:1313/api/liked', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        }).then(response => response.json()).then(data => {
-            if (data.status === 'ok') {
-                console.log('Likes status updated successfully');
-                setIsInLikesValue(checked);
-                localStorage.setItem('inLikes', checked);
-            } else {
-                console.error('Error updating likes status');
-            }
-        }).catch(error => console.error('Error updating likes status:', error));
-    };
-
-    const addedToWatchlist = (e) => {
-        const checked = e.target.checked;
-        const payload = {
-            userName: username,
-            movieID: modifiedTitle,
-        };
-
-        fetch('http://localhost:1313/api/watchlist', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        }).then(response => response.json()).then(data => {
-            if (data.status === 'ok') {
-                console.log('Watchlist status updated successfully');
-                setIsInWatchlistValue(checked);
-                localStorage.setItem('inWatchlist', checked);
-            } else {
-                console.error('Error updating Watchlist status');
-            }
-        }).catch(error => console.error('Error updating Watchlist status:', error));
-    };
-
-    useEffect(() => {
-        const storedInWatchlist = localStorage.getItem('inWatchlist') === 'true';
-        setIsInWatchlistValue(storedInWatchlist);
-
-        const storedInLikes = localStorage.getItem('inLikes') === 'true';
-        setIsInLikesValue(storedInLikes);
-        console.log(storedInLikes, storedInWatchlist);
-    }, []);
 
     useEffect(() => {
         fetch(`http://localhost:1313/api/movies/staff/${modifiedTitle}`)
@@ -117,7 +138,6 @@ export default function MovieView() {
     let members;
     if (staff && staff.length > 0) {
         members = staff;
-        //console.log(members);
     } else {
         console.log('staff object empty or undefined');
     }
@@ -150,6 +170,10 @@ export default function MovieView() {
     const goBack = () => {
         navigate(-1);
     };
+
+    if (loading) {
+        return <p>Loading...</p>;
+    }
 
     return (
         <div className="max-w-fit">
@@ -194,19 +218,17 @@ export default function MovieView() {
                         {isAuthenticated && (
                             <div>
                                 <div className="flex items-center">
-                                    <span> Add to watchlist? </span>
                                     <input
-                                        onChange={addedToWatchlist}
-                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mx-2"
-                                        type="checkbox"
-                                        checked={isInWatchlist}
+                                        type="button"
+                                        className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow"
+                                        onClick={handleWatchlistButtonClick}
+                                        value={watchlistStatus === 'added' ? 'Remove from Watchlist' : 'Add to Watchlist'}
                                     />
-                                    <span className="ml-4"> Add to liked? </span>
                                     <input
-                                        onChange={addedToLiked}
-                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mx-2"
-                                        type="checkbox"
-                                        checked={isInLikes}
+                                        type="button"
+                                        className="ml-2 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1 px-2 border border-gray-400 rounded shadow"
+                                        onClick={handleLikedButtonClick}
+                                        value={likedStatus === 'liked' ? 'Unlike' : 'Like'}
                                     />
                                 </div>
                                 <form onSubmit={handleSubmit}>
