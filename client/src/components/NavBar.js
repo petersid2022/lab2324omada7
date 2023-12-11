@@ -18,7 +18,11 @@ export default function NavBar({ searchTerm, handleChange }) {
 
 
     const logout = () => {
-        window.localStorage.clear();
+        window.localStorage.removeItem('email');
+        window.localStorage.removeItem('username');
+        window.localStorage.removeItem('loggedIn');
+        window.localStorage.removeItem('token');
+        //window.localStorage.clear();
         window.location.href = '/';
     };
 
