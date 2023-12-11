@@ -21,7 +21,7 @@ export default function ActorView() {
         navigate(-1);
     };
 
-    const actorField = actor[0];
+    const actorField = actor ? actor[0] : null;
 
     return (
         <div className="max-w-fit">
@@ -45,20 +45,14 @@ export default function ActorView() {
                             />
                             <div className="flex flex-col">
                                 <div className="font-bold text-2xl">
-                                    <p className="text-gray-900">
-                                        {actorField && actorField.DirectorName}
-                                    </p>
-                                    <p className="text-gray-900">
-                                        Nationality: {actorField && actorField.Nationality}
-                                    </p>
-                                    <p className="text-gray-900">
-                                        Date of birth: {actorField && actorField.DateOfBirth}
-                                    </p>
+                                    <p className="text-gray-900">Actor: {actorField ? actorField.ActorName : 'N/A'}</p>
+                                    <p className="text-gray-900">Nationality: {actorField ? actorField.Nationality : 'N/A'}</p>
+                                    <p className="text-gray-900">Date of birth: {actorField ? actorField.DateOfBirth : 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
                         <h1 className="mt-4 text-center font-bold text-2xl text-gray-800 transition-colors duration-300">
-                            Movies directed:
+                            Movies he played in:
                         </h1>
                         {/*
                         {actorField && (
@@ -70,9 +64,10 @@ export default function ActorView() {
                             </div>
                         )}
                         */}
-                        {actorField && (
+                        {actorField ? (
                             <MovieCardDirector movie={actorField} />
-                        )}
+                        ) :
+                            'N/A'}
                     </div>
                 </div>
             </div>

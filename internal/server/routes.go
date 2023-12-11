@@ -32,6 +32,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	r.Get("/health", s.healthHandler)
 	r.Get("/api/directors", s.GetAllDirectorsHandler)
+	r.Get("/api/movies/staff/{name}", s.GetAllMovieStaffHandler)
 	r.Get("/api/directors/{name}", s.GetDirectorHandler)
 	r.Get("/api/actors", s.GetAllActorsHandler)
 	r.Get("/api/actors/{name}", s.GetActorHandler)
@@ -100,6 +101,22 @@ func (s *Server) GetActorHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(getActor)
+}
+
+func (s *Server) GetAllMovieStaffHandler(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+    movie, err := s.db.GetMovie(name)
+    if err != nil {
+        fmt.Println(err)
+		log.Fatalf("Failed to get movie. Err: %v", err)
+    }
+	getStaff, err := s.db.GetStaffByMovieID(movie.Id)
+	if err != nil {
+		log.Fatalf("Failed to get staff. Err: %v", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(getStaff)
 }
 
 func (s *Server) GetReviewsHandler(w http.ResponseWriter, r *http.Request) {

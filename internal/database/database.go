@@ -35,14 +35,23 @@ type Service interface {
 	ToggleWatchlist(movieID, userID int) error
 	GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error)
 	GetMoviesByActorID(actorID int) ([]ActedMovie, error)
+	GetStaffByMovieID(movieID int) ([]StaffMember, error)
+}
+
+type StaffMember struct {
+	ID     int    `db:"staff_id" json:"staff_id"`
+	MTitle string `json:"movie_title"`
+	Name   string `json:"name"`
+	Role   string `json:"role"`
+	TypeID int    `json:"type_id"`
 }
 
 type ActedMovie struct {
 	Movie
-	ActorID   int    `db:"actor_id" json:"actor_id"`
-	ActorName string `json:"ActorName"`
-	ActorDob  string `json:"DateOfBirth"`
-	Nationality  string `json:"Nationality"`
+	ActorID     int    `db:"actor_id" json:"actor_id"`
+	ActorName   string `json:"ActorName"`
+	ActorDob    string `json:"DateOfBirth"`
+	Nationality string `json:"Nationality"`
 }
 
 type DirectedMovie struct {
@@ -193,7 +202,7 @@ func (s *service) GetActors() []Actor {
 	var actors []Actor
 
 	for rows.Next() {
-		var actor Actor 
+		var actor Actor
 		err := rows.Scan(&actor.ID, &actor.Name, &actor.Dob, &actor.Nationality)
 		if err != nil {
 			panic(err.Error())
@@ -203,7 +212,7 @@ func (s *service) GetActors() []Actor {
 
 	fmt.Println(actors)
 
-	return actors 
+	return actors
 }
 
 func (s *service) GetDirectors() []Director {
@@ -266,7 +275,7 @@ func (s *service) GetActor(id string) (Actor, error) {
 	defer actorRow.Close()
 
 	if actorRow.Next() {
-		var actor Actor 
+		var actor Actor
 		err := actorRow.Scan(&actor.ID, &actor.Name, &actor.Dob, &actor.Nationality)
 		if err != nil {
 			return Actor{}, err
@@ -277,6 +286,64 @@ func (s *service) GetActor(id string) (Actor, error) {
 	fmt.Println(Actor{})
 
 	return Actor{}, errors.New("actor not found")
+}
+
+func (s *service) GetStaffByMovieID(movieID int) ([]StaffMember, error) {
+	query := `
+     SELECT
+         m.movie_id,
+         m.Title AS movie_title,
+         a.actor_id,
+         a.ActorName AS actor_name,
+         'Actor' AS role
+     FROM
+         MOVIE m
+         JOIN ACTED act ON m.movie_id = act.movie_id
+         JOIN ACTOR a ON act.actor_id = a.actor_id
+     WHERE
+         m.movie_id = %d
+     UNION
+     SELECT
+         m.movie_id,
+         m.Title AS movie_title,
+         d.director_id,
+         d.DirectorName AS director_name,
+         'Director' AS role
+     FROM
+         MOVIE m
+         JOIN DIRECTED dir ON m.movie_id = dir.movie_id
+         JOIN DIRECTOR d ON dir.director_id = d.director_id
+     WHERE
+         m.movie_id = %d;
+     `
+
+	foo := fmt.Sprintf(query, movieID, movieID)
+
+	rows, err := s.db.Query(foo)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var staff []StaffMember
+	for rows.Next() {
+		var member StaffMember
+		err := rows.Scan(
+			&member.ID,
+            &member.MTitle,
+            &member.TypeID,
+			&member.Name,
+			&member.Role,
+		)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		staff = append(staff, member)
+	}
+
+	return staff, nil
 }
 
 func (s *service) GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error) {

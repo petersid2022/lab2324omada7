@@ -3,10 +3,12 @@ import ReactStars from "react-rating-stars-component";
 import ReviewCard from './ReviewCard';
 import { TiArrowBack } from 'react-icons/ti';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import '../App.css';
 
 export default function MovieView() {
     const [movie, setMovie] = useState({});
+    const [staff, setStaff] = useState({});
     const [reviews, setReview] = useState([]);
     const { title } = useParams();
     const modifiedTitle = title.replace(/ /g, '-');
@@ -61,6 +63,31 @@ export default function MovieView() {
     };
 
     useEffect(() => {
+        fetch(`http://localhost:1313/api/movies/staff/${modifiedTitle}`)
+            .then(response => response.json())
+            .then(data => setStaff(data))
+            .catch(error => console.error('Error fetching movie items:', error));
+    }, [modifiedTitle]);
+
+    let members;
+
+    if (staff && staff.length > 0) {
+        members = staff[0];
+        console.log(members);
+    } else {
+        console.log('Staff is empty or undefined');
+    }
+
+    const generateRoleUrl = (role) => {
+        if (role) {
+            const lowercasedRole = role.toLowerCase();
+            const roles = lowercasedRole + 's';
+            return `/${roles}`;
+        }
+        return '/';
+    };
+
+    useEffect(() => {
         fetch(`http://localhost:1313/api/movies/${modifiedTitle}`)
             .then(response => response.json())
             .then(data => setMovie(data))
@@ -96,7 +123,7 @@ export default function MovieView() {
                     <div className="px-6 py-3">
                         <div className="flex items-center mt-2">
                             <img
-                                className="object-cover h-32 w-32 mr-4 rounded"
+                                className="object-cover h-40 w-40 mr-4 rounded"
                                 src="https://images.unsplash.com/photo-1595769816263-9b910be24d5f?q=80&w=2079&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                                 alt="Movie"
                             />
@@ -106,6 +133,13 @@ export default function MovieView() {
                                         {movie.Title}
                                     </h1>
                                 </div>
+                                {members ? (
+                                    <Link to={`${generateRoleUrl(members.role)}/${members.type_id}`}>
+                                        <p className="text-gray-900 text-2xl">{members.role}: {members.name}</p>
+                                    </Link>
+                                ) : (
+                                    <p className="text-gray-900 text-2xl">N/A</p>
+                                )}
                                 <p className="text-gray-900 text-2xl">Μέση Βαθμολογία: {movie.AvgRating}/5</p>
                                 <p className="text-gray-900 text-2xl">Ημερομηνία πρώτης προβολής: {movie.ReleaseDate}</p>
                                 <p className="text-gray-900 text-2xl">Είδος ταινίας: {movie.Genre}</p>
