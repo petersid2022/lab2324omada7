@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 var JWT_SECRET = []byte(fmt.Sprint(os.Getenv("KEY")))
@@ -39,6 +40,16 @@ type ReviewPayload struct {
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(cors.Handler(cors.Options{
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 
 	r.Get("/health", s.healthHandler)
 	r.Get("/api/directors", s.GetAllDirectorsHandler)
@@ -314,15 +325,15 @@ func (s *Server) ToggleLikedHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetWatchlistHandler(w http.ResponseWriter, r *http.Request) {
 	movienameStr := chi.URLParam(r, "movie_name")
-    movieId, _:= s.db.GetMovie(movienameStr)
+	movieId, _ := s.db.GetMovie(movienameStr)
 	username := chi.URLParam(r, "username")
 	status := s.db.GetWatchlistStatus(movieId.Id, username)
-    out := ""
-    if (status == "1") {
-        out = "added"
-    } else {
-        out = "not added"
-    }
+	out := ""
+	if status == "1" {
+		out = "added"
+	} else {
+		out = "not added"
+	}
 	json.NewEncoder(w).Encode(map[string]string{
 		"status": "ok",
 		"data":   out,
@@ -331,18 +342,18 @@ func (s *Server) GetWatchlistHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetLikedHandler(w http.ResponseWriter, r *http.Request) {
 	movienameStr := chi.URLParam(r, "movie_name")
-    movieId, err := s.db.GetMovie(movienameStr)
-    if err != nil {
-        fmt.Println(err)
-    }
+	movieId, err := s.db.GetMovie(movienameStr)
+	if err != nil {
+		fmt.Println(err)
+	}
 	username := chi.URLParam(r, "username")
 	status := s.db.GetLikedStatus(movieId.Id, username)
-    out := ""
-    if (status == "1") {
-        out = "liked"
-    } else {
-        out = "not liked"
-    }
+	out := ""
+	if status == "1" {
+		out = "liked"
+	} else {
+		out = "not liked"
+	}
 	json.NewEncoder(w).Encode(map[string]string{
 		"status": "ok",
 		"data":   out,

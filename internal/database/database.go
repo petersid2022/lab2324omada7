@@ -191,7 +191,7 @@ func (s *service) GetLikedStatus(movieID int, username string) string {
 		log.Printf("Error checking likes status: %v", err)
 		return "error"
 	}
-    fmt.Println(likesStatus)
+	fmt.Println(likesStatus)
 
 	return likesStatus
 }
@@ -672,35 +672,35 @@ func comparePasswords(hashedPassword string, password string) bool {
 }
 
 func (s *service) AuthenticateUser(username string, password string) (User, string, string) {
-    selectUserQuery := fmt.Sprintf("SELECT * FROM user WHERE Username=%q", username)
-    userRow, err := s.db.Query(selectUserQuery)
-    if err != nil {
-        return User{}, "", "database error"
-    }
-    defer userRow.Close()
+	selectUserQuery := fmt.Sprintf("SELECT * FROM user WHERE Username=%q", username)
+	userRow, err := s.db.Query(selectUserQuery)
+	if err != nil {
+		return User{}, "", "database error"
+	}
+	defer userRow.Close()
 
-    var user User
-    if userRow.Next() {
-        err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
-        if err != nil {
-            return User{}, "", "database error"
-        }
-    } else {
-        return User{}, "", "usernotfound"
-    }
+	var user User
+	if userRow.Next() {
+		err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+		if err != nil {
+			return User{}, "", "database error"
+		}
+	} else {
+		return User{}, "", "usernotfound"
+	}
 
-    if comparePasswords(user.Password, password) {
-        log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
-        token, err := createToken(user.ID)
-        if err != nil {
-            log.Println("Error creating token:", err)
-            return User{}, "", "token creation error"
-        }
+	if comparePasswords(user.Password, password) {
+		log.Printf("Authentication successful for user ID: %d, username: %s", user.ID, user.Username)
+		token, err := createToken(user.ID)
+		if err != nil {
+			log.Println("Error creating token:", err)
+			return User{}, "", "token creation error"
+		}
 
-        return user, token, ""
-    } else {
-        return User{}, "", "passNoMatch"
-    }
+		return user, token, ""
+	} else {
+		return User{}, "", "passNoMatch"
+	}
 }
 
 func (s *service) ToggleWatchlist(movieID, userID int) error {

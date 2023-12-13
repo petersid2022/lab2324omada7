@@ -1,23 +1,20 @@
-# Use an official Golang runtime as a parent image
-FROM golang:1.21.4-alpine
+# Use an official Golang Alpine runtime as a parent image
+FROM golang:alpine
 
 # Set the working directory to /app
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+COPY go.mod .
 
-# Install any dependencies
+COPY go.sum .
+
+# Only download updates if modules files have changed
 RUN go mod download
+
+COPY ./ ./
 
 # Install Air for hot-reloading
 RUN go install github.com/cosmtrek/air@latest
-
-# For debugging
-RUN ls -al
-
-# Expose port 8080
-EXPOSE 8080
 
 # Run the application using Air for hot-reloading
 CMD ["/go/bin/air"]
