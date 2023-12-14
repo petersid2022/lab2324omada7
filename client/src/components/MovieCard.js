@@ -25,7 +25,7 @@ const MovieCard = (props) => {
     return (
         <Link
             to={`/movies/${modifiedTitle}`}
-            className="m-4 text-center hover:bg-gray-200 bg-gray-50 text-gray-800 max-w-md rounded-lg overflow-hidden shadow-xl block"
+            className="m-4 text-center border-2 border-transparent hover:border-black hover:bg-gray-200 bg-gray-50 text-gray-800 max-w-md rounded-lg overflow-hidden shadow-xl block"
             style={{ textDecoration: 'none' }}
         >
             <div className="pt-3">

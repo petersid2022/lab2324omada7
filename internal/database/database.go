@@ -31,13 +31,13 @@ type Service interface {
 	AddReview(url string, stars int, reviewText string, userName string)
 	AuthenticateUser(username string, password string) (User, string, string)
 	RegisterUser(username string, password string, email string) (string, error)
-	GetUserData(id int) (User, error)
+	//GetUserData(id int) (User, error)
 	ToggleWatchlist(movieID, userID int) error
 	ToggleLiked(movieID, userID int) error
 	GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error)
 	GetMoviesByActorID(actorID int) ([]ActedMovie, error)
 	GetStaffByMovieID(movieID int) ([]StaffMember, error)
-	GetUserID(username string) int
+	GetUserID(username string) (int, error)
 	GetWatchlistStatus(movieID int, username string) string
 	GetLikedStatus(movieID int, username string) string
 }
@@ -145,16 +145,16 @@ func (s *service) Health() map[string]string {
 	}
 }
 
-func (s *service) GetUserID(username string) int {
+func (s *service) GetUserID(username string) (int, error) {
 	selectDataQuery := fmt.Sprintf("SELECT user_id FROM USER where Username=%q", username)
 
 	var userID int
 	err := s.db.QueryRow(selectDataQuery).Scan(&userID)
 	if err != nil {
-		panic(err.Error())
+		return -1, errors.New("User id doesn't exist") 
 	}
 
-	return userID
+	return userID, nil
 }
 
 func (s *service) GetMovies() []Movie {
@@ -186,7 +186,12 @@ func (s *service) GetLikedStatus(movieID int, username string) string {
 	selectDataQuery := "SELECT EXISTS (SELECT 1 FROM LIKES WHERE movie_id = ? AND user_id = ?) AS likes_status"
 
 	var likesStatus string
-	err := s.db.QueryRow(selectDataQuery, movieID, s.GetUserID(username)).Scan(&likesStatus)
+    foo, err := s.GetUserID(username)
+    if err != nil {
+        log.Print(err)
+    }
+
+	err = s.db.QueryRow(selectDataQuery, movieID, foo).Scan(&likesStatus)
 	if err != nil {
 		log.Printf("Error checking likes status: %v", err)
 		return "error"
@@ -200,7 +205,12 @@ func (s *service) GetWatchlistStatus(movieID int, username string) string {
 	selectDataQuery := "SELECT EXISTS (SELECT 1 FROM ADDS_TO_WATCHLIST WHERE movie_id = ? AND user_id = ?) AS watchlist_status"
 
 	var watchlistStatus string
-	err := s.db.QueryRow(selectDataQuery, movieID, s.GetUserID(username)).Scan(&watchlistStatus)
+    foo, err := s.GetUserID(username)
+    if err != nil {
+        log.Print(err)
+    }
+
+	err = s.db.QueryRow(selectDataQuery, movieID, foo).Scan(&watchlistStatus)
 	if err != nil {
 		log.Printf("Error checking watchlist status: %v", err)
 		return "error"
@@ -466,28 +476,28 @@ func (s *service) GetMoviesByActorID(actorID int) ([]ActedMovie, error) {
 	return movies, nil
 }
 
-func (s *service) GetUserData(id int) (User, error) {
-	selectDataQuery := fmt.Sprintf("SELECT * FROM USER WHERE user_id=%d", id)
-
-	userRow, err := s.db.Query(selectDataQuery)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer userRow.Close()
-
-	if userRow.Next() {
-		var user User
-		err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
-		if err != nil {
-			return User{}, err
-		}
-		return user, nil
-	}
-
-	fmt.Println(User{})
-
-	return User{}, errors.New("user not found")
-}
+// func (s *service) GetUserData(id int) (User, error) {
+// 	selectDataQuery := fmt.Sprintf("SELECT * FROM USER WHERE user_id=%d", id)
+// 
+// 	userRow, err := s.db.Query(selectDataQuery)
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// 	defer userRow.Close()
+// 
+// 	if userRow.Next() {
+// 		var user User
+// 		err := userRow.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
+// 		if err != nil {
+// 			return User{}, err
+// 		}
+// 		return user, nil
+// 	}
+// 
+// 	fmt.Println(User{})
+// 
+// 	return User{}, errors.New("user not found")
+// }
 
 func (s *service) ShowReview(url string) ([]Review, error) {
 	modifiedTitle := strings.ReplaceAll(url, "-", " ")

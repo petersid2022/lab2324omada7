@@ -207,17 +207,16 @@ export default function MovieView() {
     }
 
     return (
-        <div className="max-w-fit">
-            <div className="mr-4 ml-4 mt-4">
-                <button onClick={goBack} className="hover:no-underline">
-                    <div className="flex fitems-center bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1.5 px-3 rounded shadow text-xl">
-                        <TiArrowBack className="mt-1 mr-1" />
-                        <span>Go Back</span>
-                    </div>
-                </button>
-            </div>
-
-            <div className="flex justify-center w-screen">
+        <div className="flex justify-center w-screen">
+            <div className="max-w-fit">
+                <div className="mr-4 ml-4 mt-4">
+                    <button onClick={goBack} className="hover:no-underline">
+                        <div className="flex fitems-center bg-white hover:bg-gray-100 text-gray-800 font-semibold py-1.5 px-3 rounded shadow text-xl">
+                            <TiArrowBack className="mt-1 mr-1" />
+                            <span>Go Back</span>
+                        </div>
+                    </button>
+                </div>
                 <div className="m-4 bg-white text-gray-800 rounded-lg overflow-hidden shadow-2xl">
                     <div className="px-6 py-3">
                         <div className="flex items-center mt-2">

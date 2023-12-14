@@ -26,7 +26,6 @@ export default class LoginPage extends React.Component {
             headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
-                "Access-Control-Allow-Origin": "*",
             },
             body: JSON.stringify({
                 username: this.state.username,

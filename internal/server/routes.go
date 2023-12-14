@@ -60,7 +60,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Get("/api/movies", s.GetAllMoviesHandler)
 	r.Get("/api/movies/{title}", s.GetMovieHandler)
 	r.Get("/api/movies/reviews/{title}", s.GetReviewsHandler)
-	r.Get("/userdata/{id}", s.UserDataHandler)
+	//r.Get("/userdata/{id}", s.UserDataHandler)
 	r.Get("/api/directors/{id}", s.DirectedHandler)
 	r.Get("/api/actors/{id}", s.ActedHandler)
 	r.Post("/api/movies/add-review/{title}/{stars}", s.AddReviewHandler)
@@ -233,25 +233,25 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) UserDataHandler(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	idNum, _ := strconv.Atoi(id)
-	fmt.Println(idNum)
-	getUserdata, err := s.db.GetUserData(idNum)
-	if err != nil {
-		if errors.Is(err, errors.New("no user")) {
-			http.Error(w, "No user found", http.StatusNotFound)
-			return
-		} else {
-			log.Printf("Failed to get review. Err: %v", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(getUserdata)
-}
+// func (s *Server) UserDataHandler(w http.ResponseWriter, r *http.Request) {
+// 	id := chi.URLParam(r, "id")
+// 	idNum, _ := strconv.Atoi(id)
+// 	fmt.Println(idNum)
+// 	getUserdata, err := s.db.GetUserData(idNum)
+// 	if err != nil {
+// 		if errors.Is(err, errors.New("no user")) {
+// 			http.Error(w, "No user found", http.StatusNotFound)
+// 			return
+// 		} else {
+// 			log.Printf("Failed to get review. Err: %v", err)
+// 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// 			return
+// 		}
+// 	}
+// 
+// 	w.Header().Set("Content-Type", "application/json")
+// 	json.NewEncoder(w).Encode(getUserdata)
+// }
 
 func (s *Server) DirectedHandler(w http.ResponseWriter, r *http.Request) {
 	directorIDStr := chi.URLParam(r, "id")
@@ -286,10 +286,14 @@ func (s *Server) ToggleWatchlistHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	username := payload.Username
-	userid := s.db.GetUserID(username)
+	userid, err := s.db.GetUserID(username)
+    if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
 	movieId := payload.MovieID
 	movieIdNum, _ := s.db.GetMovie(movieId)
-	err := s.db.ToggleWatchlist(movieIdNum.Id, userid)
+	err = s.db.ToggleWatchlist(movieIdNum.Id, userid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -308,10 +312,14 @@ func (s *Server) ToggleLikedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	username := payload.Username
-	userid := s.db.GetUserID(username)
+	userid, err := s.db.GetUserID(username)
+    if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
 	movieId := payload.MovieID
 	movieIdNum, _ := s.db.GetMovie(movieId)
-	err := s.db.ToggleLiked(movieIdNum.Id, userid)
+	err = s.db.ToggleLiked(movieIdNum.Id, userid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
