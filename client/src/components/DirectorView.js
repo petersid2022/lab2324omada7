@@ -8,6 +8,16 @@ export default function DirectorView() {
     const [director, setDirector] = useState({});
     const { id } = useParams();
 
+    const transformDateFormat = (inputDate) => {
+        var parts = inputDate.split("-");
+        var year = parts[0];
+        var month = parts[1];
+        var day = parts[2];
+        var dateObject = new Date(year, month - 1, day);
+        var transformedDate = dateObject.getDate() + '/' + (dateObject.getMonth() + 1) + '/' + dateObject.getFullYear();
+        return transformedDate;
+    }
+
     useEffect(() => {
         fetch(`http://localhost:1313/api/directors/${id}`)
             .then(response => response.json())
@@ -40,28 +50,29 @@ export default function DirectorView() {
                     <div className="px-6 py-3">
                         <div className="flex items-center mt-2">
                             <img
-                                className="object-cover h-32 w-32 mr-4 rounded"
+                                className="object-cover h-24 w-24 mr-4 rounded"
                                 src="https://images.unsplash.com/photo-1595769816263-9b910be24d5f?q=80&w=2079&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                                 alt="Movie"
                             />
                             <div className="flex flex-col">
                                 <div className="font-bold text-2xl">
                                     <p className="text-gray-900">
-                                        {directorField && directorField.DirectorName}
+                                        Name: {directorField ? directorField.DirectorName : 'N/A'}
                                     </p>
                                     <p className="text-gray-900">
-                                        Nationality: {directorField && directorField.Nationality}
+                                        Nationality: {directorField ? directorField.Nationality : 'N/A'}
                                     </p>
                                     <p className="text-gray-900">
-                                        Date of birth: {directorField && directorField.DateOfBirth}
+                                        Date of birth: {directorField ? transformDateFormat(directorField.DateOfBirth) : 'N/A'}
                                     </p>
                                 </div>
                             </div>
                         </div>
-                        <h1 className="mt-4 text-center font-bold text-2xl text-gray-800 transition-colors duration-300">
-                            Movies directed:
-                        </h1>
-                        {/*
+                        <div className="flex flex-col items-center">
+                            <h1 className="mt-4 text-center font-bold text-2xl text-gray-800 transition-colors duration-300">
+                                Movies directed:
+                            </h1>
+                            {/*
                         {directorField && (
                             <div className="border border-black">
                                 <p className="text-gray-900 text-2xl">{directorField.Title}</p>
@@ -71,9 +82,11 @@ export default function DirectorView() {
                             </div>
                         )}
                         */}
-                        {directorField && (
-                            <MovieCardDirector movie={directorField} />
-                        )}
+                            {directorField ? (
+                                <MovieCardDirector movie={directorField} />
+                            ) :
+                                'N/A'}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -8,6 +8,16 @@ export default function ActorView() {
     const [actor, setActor] = useState({});
     const { id } = useParams();
 
+    const transformDateFormat = (inputDate) => {
+        var parts = inputDate.split("-");
+        var year = parts[0];
+        var month = parts[1];
+        var day = parts[2];
+        var dateObject = new Date(year, month - 1, day);
+        var transformedDate = dateObject.getDate() + '/' + (dateObject.getMonth() + 1) + '/' + dateObject.getFullYear();
+        return transformedDate;
+    }
+
     useEffect(() => {
         fetch(`http://localhost:1313/api/actors/${id}`)
             .then(response => response.json())
@@ -39,22 +49,23 @@ export default function ActorView() {
                     <div className="px-6 py-3">
                         <div className="flex items-center mt-2">
                             <img
-                                className="object-cover h-32 w-32 mr-4 rounded"
+                                className="object-cover h-24 w-24 mr-4 rounded"
                                 src="https://images.unsplash.com/photo-1595769816263-9b910be24d5f?q=80&w=2079&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                                 alt="Movie"
                             />
                             <div className="flex flex-col">
                                 <div className="font-bold text-2xl">
-                                    <p className="text-gray-900">Actor: {actorField ? actorField.ActorName : 'N/A'}</p>
+                                    <p className="text-gray-900">Name: {actorField ? actorField.ActorName : 'N/A'}</p>
                                     <p className="text-gray-900">Nationality: {actorField ? actorField.Nationality : 'N/A'}</p>
-                                    <p className="text-gray-900">Date of birth: {actorField ? actorField.DateOfBirth : 'N/A'}</p>
+                                    <p className="text-gray-900">Date of birth: {actorField ? transformDateFormat(actorField.DateOfBirth) : 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
-                        <h1 className="mt-4 text-center font-bold text-2xl text-gray-800 transition-colors duration-300">
-                            Movies he played in:
-                        </h1>
-                        {/*
+                        <div className="flex flex-col items-center">
+                            <h1 className="mt-4 text-center font-bold text-2xl text-gray-800 transition-colors duration-300">
+                                Movies he played in:
+                            </h1>
+                            {/*
                         {actorField && (
                             <div className="border border-black">
                                 <p className="text-gray-900 text-2xl">{actorField.Title}</p>
@@ -64,10 +75,11 @@ export default function ActorView() {
                             </div>
                         )}
                         */}
-                        {actorField ? (
-                            <MovieCardDirector movie={actorField} />
-                        ) :
-                            'N/A'}
+                            {actorField ? (
+                                <MovieCardDirector movie={actorField} />
+                            ) :
+                                'N/A'}
+                        </div>
                     </div>
                 </div>
             </div>

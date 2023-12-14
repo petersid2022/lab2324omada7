@@ -4,6 +4,6 @@
 
 @layer base {
     html {
-        @apply min-h-screen bg-gradient-to-r from-violet-300 to-violet-400;
+        @apply min-h-screen bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-gray-600 via-gray-800 to-blue-900;
     }
 }

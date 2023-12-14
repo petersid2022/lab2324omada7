@@ -146,7 +146,7 @@ func (s *service) Health() map[string]string {
 }
 
 func (s *service) GetUserID(username string) int {
-	selectDataQuery := fmt.Sprintf("SELECT user_id FROM user where Username=%q", username)
+	selectDataQuery := fmt.Sprintf("SELECT user_id FROM USER where Username=%q", username)
 
 	var userID int
 	err := s.db.QueryRow(selectDataQuery).Scan(&userID)
@@ -158,7 +158,7 @@ func (s *service) GetUserID(username string) int {
 }
 
 func (s *service) GetMovies() []Movie {
-	selectDataQuery := "SELECT * FROM movie"
+	selectDataQuery := "SELECT * FROM MOVIE"
 
 	rows, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -183,7 +183,7 @@ func (s *service) GetMovies() []Movie {
 }
 
 func (s *service) GetLikedStatus(movieID int, username string) string {
-	selectDataQuery := "SELECT EXISTS (SELECT 1 FROM likes WHERE movie_id = ? AND user_id = ?) AS likes_status"
+	selectDataQuery := "SELECT EXISTS (SELECT 1 FROM LIKES WHERE movie_id = ? AND user_id = ?) AS likes_status"
 
 	var likesStatus string
 	err := s.db.QueryRow(selectDataQuery, movieID, s.GetUserID(username)).Scan(&likesStatus)
@@ -197,7 +197,7 @@ func (s *service) GetLikedStatus(movieID int, username string) string {
 }
 
 func (s *service) GetWatchlistStatus(movieID int, username string) string {
-	selectDataQuery := "SELECT EXISTS (SELECT 1 FROM adds_to_watchlist WHERE movie_id = ? AND user_id = ?) AS watchlist_status"
+	selectDataQuery := "SELECT EXISTS (SELECT 1 FROM ADDS_TO_WATCHLIST WHERE movie_id = ? AND user_id = ?) AS watchlist_status"
 
 	var watchlistStatus string
 	err := s.db.QueryRow(selectDataQuery, movieID, s.GetUserID(username)).Scan(&watchlistStatus)
@@ -210,7 +210,7 @@ func (s *service) GetWatchlistStatus(movieID int, username string) string {
 
 func (s *service) GetMovie(url string) (Movie, error) {
 	modifiedTitle := strings.ReplaceAll(url, "-", " ")
-	selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
+	selectDataQuery := fmt.Sprintf("SELECT * FROM MOVIE WHERE Title=%q", modifiedTitle)
 
 	movieRow, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -233,7 +233,7 @@ func (s *service) GetMovie(url string) (Movie, error) {
 }
 
 func (s *service) GetActors() []Actor {
-	selectDataQuery := "SELECT * FROM actor"
+	selectDataQuery := "SELECT * FROM ACTOR"
 
 	rows, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -258,7 +258,7 @@ func (s *service) GetActors() []Actor {
 }
 
 func (s *service) GetDirectors() []Director {
-	selectDataQuery := "SELECT * FROM director"
+	selectDataQuery := "SELECT * FROM DIRECTOR"
 
 	rows, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -284,7 +284,7 @@ func (s *service) GetDirectors() []Director {
 
 func (s *service) GetDirector(id string) (Director, error) {
 	idNum, _ := strconv.Atoi(id)
-	selectDataQuery := fmt.Sprintf("SELECT * FROM director WHERE director_id=%d", idNum)
+	selectDataQuery := fmt.Sprintf("SELECT * FROM DIRECTOR WHERE director_id=%d", idNum)
 
 	directorRow, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -308,7 +308,7 @@ func (s *service) GetDirector(id string) (Director, error) {
 
 func (s *service) GetActor(id string) (Actor, error) {
 	idNum, _ := strconv.Atoi(id)
-	selectDataQuery := fmt.Sprintf("SELECT * FROM actor WHERE actor_id=%d", idNum)
+	selectDataQuery := fmt.Sprintf("SELECT * FROM ACTOR WHERE actor_id=%d", idNum)
 
 	actorRow, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -333,30 +333,30 @@ func (s *service) GetActor(id string) (Actor, error) {
 func (s *service) GetStaffByMovieID(movieID int) ([]StaffMember, error) {
 	query := `
      SELECT
-         m.movie_id,
-         m.Title AS movie_title,
-         a.actor_id,
-         a.ActorName AS actor_name,
+         M.movie_id,
+         M.Title AS movie_title,
+         A.actor_id,
+         A.ActorName AS actor_name,
          'Actor' AS role
      FROM
-         MOVIE m
-         JOIN ACTED act ON m.movie_id = act.movie_id
-         JOIN ACTOR a ON act.actor_id = a.actor_id
+         MOVIE M
+         JOIN ACTED ACT ON M.movie_id = ACT.movie_id
+         JOIN ACTOR A ON ACT.actor_id = A.actor_id
      WHERE
-         m.movie_id = %d
+         M.movie_id = %d
      UNION
      SELECT
-         m.movie_id,
-         m.Title AS movie_title,
-         d.director_id,
-         d.DirectorName AS director_name,
+         M.movie_id,
+         M.Title AS movie_title,
+         D.director_id,
+         D.DirectorName AS director_name,
          'Director' AS role
      FROM
-         MOVIE m
-         JOIN DIRECTED dir ON m.movie_id = dir.movie_id
-         JOIN DIRECTOR d ON dir.director_id = d.director_id
+         MOVIE M
+         JOIN DIRECTED DIR ON M.movie_id = DIR.movie_id
+         JOIN DIRECTOR D ON DIR.director_id = D.director_id
      WHERE
-         m.movie_id = %d;
+         M.movie_id = %d;
      `
 
 	foo := fmt.Sprintf(query, movieID, movieID)
@@ -390,11 +390,11 @@ func (s *service) GetStaffByMovieID(movieID int) ([]StaffMember, error) {
 
 func (s *service) GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error) {
 	query := `
-		SELECT m.movie_id, m.Title, m.ReleaseDate, m.Genre, m.AvgRating, d.director_id, dir.DateOfBirth, dir.DirectorName, dir.Nationality
-		FROM MOVIE m
-		JOIN DIRECTED d ON m.movie_id = d.movie_id
-		JOIN DIRECTOR dir ON d.director_id = dir.director_id
-		WHERE d.director_id = ?`
+		SELECT M.movie_id, M.Title, M.ReleaseDate, M.Genre, M.AvgRating, D.director_id, DIR.DateOfBirth, DIR.DirectorName, DIR.Nationality
+		FROM MOVIE M
+		JOIN DIRECTED D ON M.movie_id = D.movie_id
+		JOIN DIRECTOR DIR ON D.director_id = DIR.director_id
+		WHERE D.director_id = ?`
 
 	rows, err := s.db.Query(query, directorID)
 	if err != nil {
@@ -429,11 +429,11 @@ func (s *service) GetMoviesByDirectorID(directorID int) ([]DirectedMovie, error)
 
 func (s *service) GetMoviesByActorID(actorID int) ([]ActedMovie, error) {
 	query := `
-		SELECT m.movie_id, m.Title, m.ReleaseDate, m.Genre, m.AvgRating, act.actor_id, act.DateOfBirth, act.ActorName, act.Nationality
-		FROM MOVIE m
-		JOIN ACTED a ON m.movie_id = a.movie_id
-		JOIN ACTOR act ON a.actor_id = act.actor_id
-		WHERE a.actor_id = ?`
+		SELECT M.movie_id, M.Title, M.ReleaseDate, M.Genre, M.AvgRating, ACT.actor_id, ACT.DateOfBirth, ACT.ActorName, ACT.Nationality
+		FROM MOVIE M
+		JOIN ACTED A ON M.movie_id = A.movie_id
+		JOIN ACTOR ACT ON A.actor_id = ACT.actor_id
+		WHERE A.actor_id = ?`
 
 	rows, err := s.db.Query(query, actorID)
 	if err != nil {
@@ -467,7 +467,7 @@ func (s *service) GetMoviesByActorID(actorID int) ([]ActedMovie, error) {
 }
 
 func (s *service) GetUserData(id int) (User, error) {
-	selectDataQuery := fmt.Sprintf("SELECT * FROM user WHERE user_id=%d", id)
+	selectDataQuery := fmt.Sprintf("SELECT * FROM USER WHERE user_id=%d", id)
 
 	userRow, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -491,7 +491,7 @@ func (s *service) GetUserData(id int) (User, error) {
 
 func (s *service) ShowReview(url string) ([]Review, error) {
 	modifiedTitle := strings.ReplaceAll(url, "-", " ")
-	selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
+	selectDataQuery := fmt.Sprintf("SELECT * FROM MOVIE WHERE Title=%q", modifiedTitle)
 
 	movieRow, err := s.db.Query(selectDataQuery)
 	if err != nil {
@@ -507,7 +507,7 @@ func (s *service) ShowReview(url string) ([]Review, error) {
 		}
 	}
 
-	reviewDataQuery := fmt.Sprintf("SELECT * FROM review WHERE movie_id=%d", movie.Id)
+	reviewDataQuery := fmt.Sprintf("SELECT * FROM REVIEW WHERE movie_id=%d", movie.Id)
 
 	reviewRow, err := s.db.Query(reviewDataQuery)
 	if err != nil {
@@ -538,7 +538,7 @@ func (s *service) ShowReview(url string) ([]Review, error) {
 func (s *service) AddReview(url string, stars int, reviewText string, username string) {
 	modifiedTitle := strings.ReplaceAll(url, "-", " ")
 
-	selectDataQuery := fmt.Sprintf("SELECT * FROM movie WHERE Title=%q", modifiedTitle)
+	selectDataQuery := fmt.Sprintf("SELECT * FROM MOVIE WHERE Title=%q", modifiedTitle)
 	movieRow, err := s.db.Query(selectDataQuery)
 	if err != nil {
 		panic(err.Error())
@@ -553,14 +553,14 @@ func (s *service) AddReview(url string, stars int, reviewText string, username s
 		}
 	}
 
-	getUserIDQuery := fmt.Sprintf("SELECT user_id FROM user WHERE Username=%q", username)
+	getUserIDQuery := fmt.Sprintf("SELECT user_id FROM USER WHERE Username=%q", username)
 	var userID int
 	err = s.db.QueryRow(getUserIDQuery).Scan(&userID)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	existingReviewQuery := "SELECT r.review_id FROM wrote w JOIN review r ON w.review_id = r.review_id WHERE w.user_id = ? AND r.movie_id = ?"
+	existingReviewQuery := "SELECT R.review_id FROM WROTE W JOIN REVIEW R ON W.review_id = R.review_id WHERE W.user_id = ? AND R.movie_id = ?"
 	rows, err := s.db.Query(existingReviewQuery, userID, movie.Id)
 	if err != nil {
 		panic(err.Error())
@@ -580,13 +580,13 @@ func (s *service) AddReview(url string, stars int, reviewText string, username s
 	dateToday := fmt.Sprintf("%d-%d-%d", currentTime.Year(), currentTime.Month(), currentTime.Day())
 
 	if len(existingReviewIDs) > 0 {
-		updateReviewQuery := "UPDATE review SET ReviewText = ?, RatingStars = ?, DatePosted = ? WHERE review_id = ?"
+		updateReviewQuery := "UPDATE REVIEW SET ReviewText = ?, RatingStars = ?, DatePosted = ? WHERE review_id = ?"
 		_, err = s.db.Exec(updateReviewQuery, reviewText, stars, dateToday, existingReviewIDs[len(existingReviewIDs)-1])
 		if err != nil {
 			panic(err.Error())
 		}
 	} else {
-		insertReviewQuery := fmt.Sprintf("INSERT INTO review (ReviewText, RatingStars, DatePosted, movie_id) VALUES (%q, %d, '%s', %d);", reviewText, stars, dateToday, movie.Id)
+		insertReviewQuery := fmt.Sprintf("INSERT INTO REVIEW (ReviewText, RatingStars, DatePosted, movie_id) VALUES (%q, %d, '%s', %d);", reviewText, stars, dateToday, movie.Id)
 
 		_, err = s.db.Exec(insertReviewQuery)
 		if err != nil {
@@ -600,14 +600,14 @@ func (s *service) AddReview(url string, stars int, reviewText string, username s
 			panic(err.Error())
 		}
 
-		insertWroteQuery := "INSERT INTO wrote (review_id, user_id) VALUES (?, ?)"
+		insertWroteQuery := "INSERT INTO WROTE (review_id, user_id) VALUES (?, ?)"
 		_, err = s.db.Exec(insertWroteQuery, lastReviewID, userID)
 		if err != nil {
 			panic(err.Error())
 		}
 	}
 
-	updateAvgRatingQuery := fmt.Sprintf("UPDATE movie SET AvgRating = (SELECT AVG(RatingStars) FROM review WHERE movie_id = %d) WHERE movie_id = %d", movie.Id, movie.Id)
+	updateAvgRatingQuery := fmt.Sprintf("UPDATE MOVIE SET AvgRating = (SELECT AVG(RatingStars) FROM REVIEW WHERE movie_id = %d) WHERE movie_id = %d", movie.Id, movie.Id)
 	_, err = s.db.Exec(updateAvgRatingQuery)
 	if err != nil {
 		panic(err.Error())
@@ -628,13 +628,13 @@ func (s *service) RegisterUser(username string, password string, email string) (
 		return "", err
 	}
 
-	insertUserQuery := fmt.Sprintf("INSERT INTO user (Username, Password, Email) VALUES (%q, %q, %q)", username, hashedPassword, email)
+	insertUserQuery := fmt.Sprintf("INSERT INTO USER (Username, Password, Email) VALUES (%q, %q, %q)", username, hashedPassword, email)
 	_, err = s.db.Exec(insertUserQuery)
 	if err != nil {
 		return "", err
 	}
 
-	getUserIdQuery := fmt.Sprintf("SELECT user_id FROM user WHERE Username=%q", username)
+	getUserIdQuery := fmt.Sprintf("SELECT user_id FROM USER WHERE Username=%q", username)
 	var userID int
 	err = s.db.QueryRow(getUserIdQuery).Scan(&userID)
 	if err != nil {
@@ -672,7 +672,7 @@ func comparePasswords(hashedPassword string, password string) bool {
 }
 
 func (s *service) AuthenticateUser(username string, password string) (User, string, string) {
-	selectUserQuery := fmt.Sprintf("SELECT * FROM user WHERE Username=%q", username)
+	selectUserQuery := fmt.Sprintf("SELECT * FROM USER WHERE Username=%q", username)
 	userRow, err := s.db.Query(selectUserQuery)
 	if err != nil {
 		return User{}, "", "database error"
@@ -705,18 +705,18 @@ func (s *service) AuthenticateUser(username string, password string) (User, stri
 
 func (s *service) ToggleWatchlist(movieID, userID int) error {
 	var exists bool
-	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM adds_to_watchlist WHERE movie_id = ? AND user_id = ?)", movieID, userID).Scan(&exists)
+	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM ADDS_TO_WATCHLIST WHERE movie_id = ? AND user_id = ?)", movieID, userID).Scan(&exists)
 	if err != nil {
 		return err
 	}
 
 	if exists {
-		_, err = s.db.Exec("DELETE FROM adds_to_watchlist WHERE movie_id = ? AND user_id = ?", movieID, userID)
+		_, err = s.db.Exec("DELETE FROM ADDS_TO_WATCHLIST WHERE movie_id = ? AND user_id = ?", movieID, userID)
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err = s.db.Exec("INSERT INTO adds_to_watchlist (movie_id, user_id, DateAdded) VALUES (?, ?, ?)", movieID, userID, time.Now())
+		_, err = s.db.Exec("INSERT INTO ADDS_TO_WATCHLIST (movie_id, user_id, DateAdded) VALUES (?, ?, ?)", movieID, userID, time.Now())
 		if err != nil {
 			return err
 		}
@@ -727,18 +727,18 @@ func (s *service) ToggleWatchlist(movieID, userID int) error {
 
 func (s *service) ToggleLiked(movieID, userID int) error {
 	var exists bool
-	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE movie_id = ? AND user_id = ?)", movieID, userID).Scan(&exists)
+	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM LIKES WHERE movie_id = ? AND user_id = ?)", movieID, userID).Scan(&exists)
 	if err != nil {
 		return err
 	}
 
 	if exists {
-		_, err = s.db.Exec("DELETE FROM likes WHERE movie_id = ? AND user_id = ?", movieID, userID)
+		_, err = s.db.Exec("DELETE FROM LIKES WHERE movie_id = ? AND user_id = ?", movieID, userID)
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err = s.db.Exec("INSERT INTO likes (movie_id, user_id, DateAdded) VALUES (?, ?, ?)", movieID, userID, time.Now())
+		_, err = s.db.Exec("INSERT INTO LIKES (movie_id, user_id, DateAdded) VALUES (?, ?, ?)", movieID, userID, time.Now())
 		if err != nil {
 			return err
 		}
