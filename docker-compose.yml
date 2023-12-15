@@ -23,3 +23,13 @@ services:
       - 1313:1313
     volumes:
       - ./:/app/
+  db:
+    image: mysql:5.7.26
+    container_name: godockerDB
+    environment:
+      MYSQL_USER: lab2324omada7
+      MYSQL_ROOT_PASSWORD: lab2324omada7
+      MYSQL_PASSWORD: lab2324omada7
+      MYSQL_DATABASE: lab2324omada7_tainia
+    ports:
+      - "3307:3306"

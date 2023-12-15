@@ -42,13 +42,14 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"https://*", "http://*"},
+		//AllowedOrigins: []string{"https://*", "http://*"},
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		MaxAge:           300, // Maximum value not ignored by any of the major browsers
 	}))
 
 	r.Get("/health", s.healthHandler)
@@ -248,7 +249,7 @@ func (s *Server) LoginHandler(w http.ResponseWriter, r *http.Request) {
 // 			return
 // 		}
 // 	}
-// 
+//
 // 	w.Header().Set("Content-Type", "application/json")
 // 	json.NewEncoder(w).Encode(getUserdata)
 // }
@@ -287,10 +288,10 @@ func (s *Server) ToggleWatchlistHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	username := payload.Username
 	userid, err := s.db.GetUserID(username)
-    if err != nil {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
+		return
+	}
 	movieId := payload.MovieID
 	movieIdNum, _ := s.db.GetMovie(movieId)
 	err = s.db.ToggleWatchlist(movieIdNum.Id, userid)
@@ -313,10 +314,10 @@ func (s *Server) ToggleLikedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	username := payload.Username
 	userid, err := s.db.GetUserID(username)
-    if err != nil {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-    }
+		return
+	}
 	movieId := payload.MovieID
 	movieIdNum, _ := s.db.GetMovie(movieId)
 	err = s.db.ToggleLiked(movieIdNum.Id, userid)
